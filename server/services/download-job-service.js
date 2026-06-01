@@ -1,11 +1,12 @@
 const { execFileSync } = require("child_process");
+const defaultIconv = require("iconv-lite");
 const { createLogger } = require("./logger-service");
 const { resolveFfmpegPath, resolveYtDlpPath } = require("./tool-path-service");
 
-function decodeYtDlpBuffer(buffer) {
+function decodeYtDlpBuffer(buffer, decoder = defaultIconv) {
   const source = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer || "");
   if (process.platform === "win32") {
-    return iconv.decode(source, "cp932");
+    return decoder.decode(source, "cp932");
   }
   return source.toString("utf8");
 }
@@ -32,6 +33,17 @@ function createDownloadJobService({
     "Video is no longer live",
     "Did not get any data blocks",
   ];
+  const VIDEO_EXTS = new Set([
+    ".mp4",
+    ".mkv",
+    ".webm",
+    ".flv",
+    ".mov",
+    ".m4v",
+    ".ts",
+    ".avi",
+    ".wmv",
+  ]);
   let cachedFfmpegCheck = null;
 
   function normalizeYoutubeUrl(url) {
@@ -211,7 +223,7 @@ function createDownloadJobService({
       args.push("--write-thumbnail");
       args.push("-P", `thumbnail:${targetThumbDir}`);
     }
-    if (options.saveHistory) {
+    if (options.saveHistory && !mode.disableDownloadArchive) {
       args.push("--download-archive", path.join(baseDir, "finished.txt"));
     }
     if (job.cookieFile) {
@@ -244,6 +256,9 @@ function createDownloadJobService({
     if (enableLiveChat) {
       args.push("--write-subs");
       args.push("--sub-langs", "live_chat,all");
+    }
+    if (downloadVideoEnabled || enableComments || enableLiveChat) {
+      args.push("--write-info-json");
     }
     if (liveReplayMode) {
       args.push(
@@ -457,14 +472,14 @@ function createDownloadJobService({
 
       ytDlpProcess.on("close", (code) => {
         const stdoutBuffer = Buffer.concat(stdoutChunks);
-        const title = decodeYtDlpBuffer(stdoutBuffer);
+        const title = decodeYtDlpBuffer(stdoutBuffer, iconv);
         if (code === 0 && title.trim() !== "") {
           resolve(title.trim());
           return;
         }
 
         const stderrBuffer = Buffer.concat(stderrChunks);
-        const stderr = decodeYtDlpBuffer(stderrBuffer);
+        const stderr = decodeYtDlpBuffer(stderrBuffer, iconv);
         reject(new Error(`yt-dlp exited with code ${code}. Stderr: ${stderr}`));
       });
 
@@ -704,6 +719,56 @@ function createDownloadJobService({
     return videoFiles[0];
   }
 
+  function snapshotVideoFiles(targetDir) {
+    const snapshot = new Map();
+    if (!targetDir || !fs.existsSync(targetDir)) return snapshot;
+
+    for (const file of fs.readdirSync(targetDir)) {
+      const filePath = path.join(targetDir, file);
+      let stat;
+      try {
+        stat = fs.statSync(filePath);
+      } catch (error) {
+        if (error.code === "ENOENT") continue;
+        throw error;
+      }
+      if (!stat.isFile() || !VIDEO_EXTS.has(path.extname(file).toLowerCase())) {
+        continue;
+      }
+      snapshot.set(filePath, {
+        size: stat.size,
+        mtimeMs: stat.mtimeMs,
+      });
+    }
+
+    return snapshot;
+  }
+
+  function findNewOrChangedVideoFiles(targetDir, beforeSnapshot) {
+    const files = [];
+    if (!targetDir || !fs.existsSync(targetDir)) return files;
+
+    for (const file of fs.readdirSync(targetDir)) {
+      const filePath = path.join(targetDir, file);
+      let stat;
+      try {
+        stat = fs.statSync(filePath);
+      } catch (error) {
+        if (error.code === "ENOENT") continue;
+        throw error;
+      }
+      if (!stat.isFile() || !VIDEO_EXTS.has(path.extname(file).toLowerCase())) {
+        continue;
+      }
+      const previous = beforeSnapshot.get(filePath);
+      if (!previous || previous.size !== stat.size || previous.mtimeMs !== stat.mtimeMs) {
+        files.push(filePath);
+      }
+    }
+
+    return files;
+  }
+
   async function runFfmpegRemux(inputPath) {
     return new Promise((resolve, reject) => {
       const ffmpegPath = resolveFfmpegPath(baseDir);
@@ -892,8 +957,14 @@ function createDownloadJobService({
     });
   }
 
-  async function runYtDlpDownload(job, settings, ytDlpPath, paths) {
-    const firstAttempt = await runYtDlpDownloadAttempt(job, settings, ytDlpPath, paths);
+  async function runYtDlpDownload(job, settings, ytDlpPath, paths, baseMode = {}) {
+    const firstAttempt = await runYtDlpDownloadAttempt(
+      job,
+      settings,
+      ytDlpPath,
+      paths,
+      baseMode,
+    );
     if (!firstAttempt.skippedByLiveFilter) {
       return;
     }
@@ -915,6 +986,7 @@ function createDownloadJobService({
       });
       try {
         await runYtDlpDownloadAttempt(job, settings, ytDlpPath, paths, {
+          ...baseMode,
           liveReplayMode: true,
           liveVideoOnly: true,
           progressLabel: "ライブ動画取得中",
@@ -925,6 +997,7 @@ function createDownloadJobService({
             url: job.url,
           });
           await runYtDlpDownloadAttempt(job, settings, ytDlpPath, paths, {
+            ...baseMode,
             plainRetryMode: true,
           });
           return;
@@ -947,6 +1020,7 @@ function createDownloadJobService({
         url: job.url,
       });
       await runYtDlpDownloadAttempt(job, settings, ytDlpPath, paths, {
+        ...baseMode,
         liveReplayMode: true,
         liveChatOnly: true,
         progressLabel: "ライブチャット取得中",
@@ -975,10 +1049,47 @@ function createDownloadJobService({
       throw new Error(`保存先準備失敗: ${error.message}`);
     }
 
-    await runYtDlpDownload(job, settings, ytDlpPath, paths);
-
     const downloadVideoEnabled =
       job.options.downloadVideo === true || job.options.downloadVideo === "true";
+    const beforeVideoSnapshot = snapshotVideoFiles(paths.finalMovieDir);
+
+    await runYtDlpDownload(job, settings, ytDlpPath, paths);
+
+    if (downloadVideoEnabled) {
+      let downloadedVideoFiles = findNewOrChangedVideoFiles(
+        paths.finalMovieDir,
+        beforeVideoSnapshot,
+      );
+
+      if (downloadedVideoFiles.length === 0 && job.options.saveHistory) {
+        logger.warn("動画ファイルが作成されていないため保存履歴を使わず再試行します", {
+          finalMovieDir: paths.finalMovieDir,
+        });
+        job.progress = {
+          ...job.progress,
+          speed: "",
+          totalSize: "",
+          eta: "保存履歴によるスキップの可能性があるため再試行中...",
+        };
+        broadcast("progress_update", { id: job.id, progress: job.progress });
+
+        const retrySnapshot = snapshotVideoFiles(paths.finalMovieDir);
+        await runYtDlpDownload(job, settings, ytDlpPath, paths, {
+          disableDownloadArchive: true,
+        });
+        downloadedVideoFiles = findNewOrChangedVideoFiles(
+          paths.finalMovieDir,
+          retrySnapshot,
+        );
+      }
+
+      if (downloadedVideoFiles.length === 0) {
+        throw new Error(
+          `yt-dlpは終了しましたが動画ファイルが作成されませんでした。保存先: ${paths.finalMovieDir}`,
+        );
+      }
+    }
+
     if (downloadVideoEnabled && job.options.remuxVideo) {
       const files = fs.readdirSync(paths.finalMovieDir);
       const infoFile = files.find((f) => f.endsWith(".info.json"));
@@ -1032,6 +1143,11 @@ function createDownloadJobService({
 
     if (!infoFile) {
       logger.warn("info.json が無いため登録不可", { jobPendingDir });
+      if (downloadVideoEnabled) {
+        throw new Error(
+          `動画ファイルは作成されましたが info.json が作成されませんでした。保存先: ${paths.finalMovieDir}`,
+        );
+      }
       job.progress = {
         ...job.progress,
         percentage: 100,
