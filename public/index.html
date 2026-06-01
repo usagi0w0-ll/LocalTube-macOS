@@ -1,0 +1,5899 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f0f0f" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="LocalTube" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <title>LocalTube</title>
+    <style>
+      /* ==================================================
+   1) DESIGN TOKENS / VARIABLES
+================================================== */
+
+      :root {
+        --bg: #0f0f0f;
+        --panel: rgba(18, 18, 18, 0.78);
+        /* --border: #303030; */
+        --text: #f1f1f1;
+        --subtext: #aaa;
+        --accent: #ff0000;
+        --warn: #ff9800;
+        --green: #4caf50;
+        --blue: #2196f3;
+        --black-panel: rgba(0, 0, 0, 0.62);
+        color-scheme: dark;
+      }
+
+      /* ==================================================
+   2) RESET / BASE
+================================================== */
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        position: relative;
+        isolation: isolate;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        pointer-events: none;
+        background-image: var(--wallpaper-url, none);
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        filter: blur(var(--wallpaper-blur, 2px))
+          brightness(var(--wallpaper-brightness, 50%));
+        transform: scale(1.05);
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background: rgba(0, 0, 0, 0.18);
+      }
+
+      /* ==================================================
+   3) COMMON UI PATTERNS（共通パーツ）
+================================================== */
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        backdrop-filter: blur(2px);
+      }
+
+      /* 黒ベースのボックス共通化 */
+      .panel-black {
+        background: var(--black-panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        backdrop-filter: blur(2px);
+      }
+
+      /* フォーム共通 */
+      select,
+      input[type="text"],
+      textarea {
+        /* background: var(--black-panel); */
+        background: rgb(255 255 255 / 5%);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 10px;
+        border-radius: 8px;
+        font-family: "Segoe UI", Roboto, sans-serif;
+      }
+
+      /* ドロップダウン展開時のネイティブ配色をダーク寄りに固定 */
+      select {
+        color-scheme: dark;
+        /* background-color: #1b1b1b; */
+        color: var(--text);
+      }
+
+      select option,
+      select optgroup {
+        background: #1b1b1b;
+        color: var(--text);
+      }
+
+      select option:checked,
+      select option:hover {
+        background: #2b2b2b;
+        color: var(--text);
+      }
+
+      /* ==================================================
+   4) HEADER
+================================================== */
+
+      header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 56px;
+        background: rgb(0 0 0 / 34%);
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        z-index: 10;
+        width: 100%;
+      }
+
+      .header-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        gap: 16px;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .logo-icon {
+        width: 26px;
+        height: 26px;
+        background-image: url("favicon.ico");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+
+      .logo-text {
+        line-height: 1;
+      }
+
+      .header-search-wrap {
+        flex: 1;
+        max-width: 720px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #111;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0 12px;
+        height: 38px;
+      }
+
+      .header-search-wrap i {
+        color: var(--subtext);
+        font-size: 14px;
+      }
+
+      .header-connection-status {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #7a3f00;
+        background: rgba(255, 152, 0, 0.14);
+        color: #ffd7a6;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 12px;
+        line-height: 1.2;
+        white-space: nowrap;
+        max-width: 520px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .header-connection-status.visible {
+        display: inline-flex;
+      }
+
+      .header-search {
+        width: 100%;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--text);
+        font-size: 14px;
+      }
+
+      .header-filter-container {
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .header-sort-container {
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .header-filter-btn {
+        height: 28px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: #1d1d1d;
+        color: var(--text);
+        padding: 0 12px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .header-sort-btn {
+        height: 28px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: #1d1d1d;
+        color: var(--text);
+        padding: 0 12px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .home-filter-panel {
+        position: absolute;
+        top: 38px;
+        right: 0;
+        width: min(92vw, 420px);
+        background: #121212;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+        z-index: 50;
+      }
+
+      .home-sort-panel {
+        position: absolute;
+        top: 38px;
+        right: 0;
+        width: min(92vw, 320px);
+        background: #121212;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+        z-index: 50;
+      }
+
+      .home-sort-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .home-sort-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .home-sort-label {
+        font-size: 12px;
+        color: var(--subtext);
+        min-width: 64px;
+      }
+
+      .home-sort-inline {
+        display: flex;
+        gap: 6px;
+      }
+
+      .home-sort-key-btn,
+      .home-sort-order-btn {
+        height: 28px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #1d1d1d;
+        color: var(--text);
+        padding: 0 10px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .home-sort-key-btn.active,
+      .home-sort-order-btn.active {
+        border-color: rgba(58, 141, 222, 0.8);
+        background: rgba(58, 141, 222, 0.2);
+      }
+
+      .home-filter-row {
+        margin-bottom: 10px;
+      }
+
+      .home-filter-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .home-filter-label {
+        font-size: 12px;
+        color: var(--subtext);
+        margin-bottom: 6px;
+      }
+
+      .home-filter-inline {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .home-filter-inline input,
+      .home-filter-inline select {
+        background: #1b1b1b;
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 8px;
+        height: 30px;
+        padding: 0 8px;
+        min-width: 0;
+      }
+
+      .home-filter-inline input[type="date"] {
+        user-select: none;
+        -webkit-user-select: none;
+        caret-color: transparent;
+      }
+
+      .home-filter-inline input[type="date"]::-webkit-datetime-edit {
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .home-filter-ymd {
+        width: 120px;
+      }
+
+      .home-filter-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .home-filter-clear-btn {
+        height: 30px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #1d1d1d;
+        color: var(--text);
+        padding: 0 12px;
+        cursor: pointer;
+      }
+
+      .header-search::placeholder {
+        color: #777;
+      }
+
+      /* ヘッダーボタン */
+      .header-buttons {
+        display: flex;
+        gap: 12px;
+        transform: scale(1.1);
+        flex-shrink: 0;
+        transition:
+          transform 0.22s ease,
+          opacity 0.22s ease;
+      }
+
+      .icon-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px;
+        transition: background 0.2s;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      }
+
+      .icon-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .icon-btn:active {
+        background: rgba(255, 0, 0, 0.2);
+      }
+
+      /* 現在のページ */
+      .icon-btn.active {
+        border: 2.5px solid var(--text);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .fullscreen-toggle-btn {
+        display: none;
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px;
+        transition: background 0.2s;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      }
+
+      .fullscreen-toggle-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .fullscreen-toggle-btn:active {
+        background: rgba(255, 0, 0, 0.2);
+      }
+
+      .fullscreen-toggle-btn.active {
+        border: 2.5px solid var(--text);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      /* ==================================================
+   5) PAGE LAYOUT
+================================================== */
+
+      main {
+        max-width: 1800px;
+        margin: 56px auto 20px;
+      }
+
+      /* ページ切替 */
+      .page {
+        display: none;
+        padding-top: 20px;
+      }
+
+      .page.active-page {
+        display: block;
+      }
+
+      /* 2カラム（ダウンロード画面） */
+      .card-layout {
+        display: flex;
+        gap: 16px;
+      }
+
+      .card-main {
+        flex: 2;
+        min-width: 0;
+      }
+
+      .card-side {
+        flex: 1;
+        min-width: 0;
+        /* background: var(--black-panel); */
+        border-radius: 10px;
+        padding: 12px;
+        color: var(--text);
+      }
+
+      /* ==================================================
+   6) FORM / INPUT AREA（URL・オプション）
+================================================== */
+
+      .url-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+        padding-inline: 6px;
+        width: 100%;
+      }
+
+      .field-label {
+        font-weight: 600;
+        white-space: nowrap;
+        width: 56px;
+        min-width: 56px;
+        text-align: right;
+        padding-right: 4px;
+      }
+
+      .url-box {
+        display: flex;
+        gap: 10px;
+        flex: 1;
+      }
+
+      .url-box textarea,
+      .url-box input {
+        flex: 1;
+        background: rgb(255 255 255 / 5%);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 12px;
+        border-radius: 8px;
+        resize: vertical;
+        min-height: 50px;
+      }
+
+      .url-box button {
+        background: var(--accent);
+        border: none;
+        color: #fff;
+        padding: 0 20px;
+        border-radius: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        align-self: flex-start;
+        height: 50px;
+      }
+
+      /* オプション列 */
+      .field-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-inline: 6px;
+        width: 100%;
+      }
+
+      .field-row-download-toggles {
+        align-items: flex-start;
+      }
+
+      .field-row select,
+      .field-row input {
+        flex: 1;
+        background: rgb(255 255 255 / 5%);
+      }
+
+      .download-toggle-group {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        width: 100%;
+      }
+
+      .download-inline-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 42px;
+        padding: 6px 10px;
+        border-radius: 12px;
+        background: rgb(255 255 255 / 5%);
+        min-width: 0;
+      }
+
+      .download-inline-toggle span:first-child {
+        color: var(--text);
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .options {
+        margin-top: 20px;
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+      }
+
+      .options > * {
+        min-width: 0;
+      }
+
+      /* レンジスライダー */
+      input[type="range"] {
+        appearance: none;
+        width: 48%;
+        height: 8px;
+        background: #555;
+        border-radius: 5px;
+        outline: none;
+        margin-top: 10px;
+      }
+
+      input[type="range"]::-webkit-slider-thumb,
+      input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 1px solid var(--border);
+      }
+
+      /* トグルスイッチ */
+      .toggle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 8px;
+        padding: 12px;
+        min-width: 0;
+      }
+
+      .toggle > * {
+        min-width: 0;
+      }
+
+      .toggle small {
+        display: block;
+        color: var(--subtext);
+        font-size: 12px;
+      }
+
+      .switch {
+        position: relative;
+        width: 42px;
+        height: 22px;
+      }
+
+      .switch input {
+        display: none;
+      }
+
+      .slider {
+        position: absolute;
+        inset: 0;
+        background: #555;
+        border-radius: 22px;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      .slider:before {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        left: 2px;
+        top: 2px;
+        background: #fff;
+        border-radius: 50%;
+        transition: 0.2s;
+      }
+
+      input:checked + .slider {
+        background: var(--accent);
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(20px);
+      }
+
+      /* ==================================================
+   7) JOB QUEUE（ダウンロードキュー）
+================================================== */
+
+      #job-queue {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .job-item {
+        background: var(--black-panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 15px;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        transition: background-color 0.3s;
+      }
+
+      .job-status-icon {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .job-details {
+        flex-grow: 1;
+        overflow: hidden;
+      }
+
+      .job-title {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 14px;
+        color: var(--text);
+      }
+
+      .job-progress-bar-container {
+        width: 100%;
+        height: 6px;
+        background: #333;
+        border-radius: 3px;
+        margin-top: 8px;
+        overflow: hidden;
+      }
+
+      .job-progress-bar {
+        height: 100%;
+        background: var(--blue);
+        width: 0%;
+        transition: width 0.2s linear;
+      }
+
+      .job-item[data-status="completed"] .job-progress-bar {
+        background: var(--green);
+      }
+
+      .job-item[data-status="error"] .job-progress-bar {
+        background: var(--accent);
+      }
+
+      .job-progress-text {
+        font-size: 12px;
+        color: var(--subtext);
+        margin-top: 4px;
+        min-height: 1.2em;
+      }
+
+      /* .download-estimate-status {
+        margin-top: 8px;
+        color: var(--subtext);
+        font-size: 12px;
+        min-height: 1.2em;
+      } */
+
+      .download-estimate-list-section {
+        margin-top: 16px;
+      }
+
+      .download-estimate-list-section.hidden {
+        display: none;
+      }
+
+      .download-estimate-list-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .download-estimate-list-header h3 {
+        margin: 0;
+      }
+
+      .download-estimate-list-total {
+        margin-top: 8px;
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+
+      .download-estimate-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .download-estimate-list.collapsed {
+        display: none;
+      }
+
+      .download-estimate-list-item {
+        color: var(--subtext);
+        font-size: 12px;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+
+      .download-estimate-toggle {
+        background: transparent;
+        border: none;
+        color: #aaa;
+        cursor: pointer;
+        font-size: 12px;
+        padding: 0 8px;
+        border-radius: 6px;
+      }
+
+      .download-estimate-toggle:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .download-estimate-toggle.hidden {
+        display: none;
+      }
+
+      .cookie-error-hint {
+        color: var(--accent); /* Red color */
+        font-weight: bold;
+      }
+
+      /* ==================================================
+   8) INFO PANEL（右サイド）
+================================================== */
+
+      .card-side h3 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        color: var(--accent);
+      }
+
+      .info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .info-label {
+        color: var(--subtext);
+        font-size: 12px;
+      }
+
+      .info-value {
+        font-weight: bold;
+        /* background: #111; */
+        padding: 2px 8px;
+        border-radius: 8px;
+      }
+
+      #info-completed-count {
+        color: var(--green);
+      }
+
+      #info-running-count {
+        color: var(--blue);
+      }
+
+      #info-error-count {
+        color: var(--accent);
+      }
+
+      .completion-bar-container {
+        width: 100%;
+        height: 8px;
+        background: #333;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 6px;
+      }
+
+      .completion-bar {
+        height: 100%;
+        width: 0%;
+        background: var(--green);
+        transition: width 0.3s ease;
+      }
+
+      .completion-text {
+        text-align: right;
+        font-size: 12px;
+        color: var(--subtext);
+        margin-top: 4px;
+      }
+
+      .chat-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 2px 8px;
+        line-height: 1.2;
+        border-radius: 8px;
+        font-size: 11px;
+        color: #e0e0e0;
+        transition: background 0.15s ease;
+      }
+
+      .chat-avatar {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        min-height: 32px;
+        border-radius: 50%;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #222;
+      }
+
+      .chat-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        /* transform: scale(0.75);
+        transform-origin: center; */
+      }
+
+      #chat-section .chat-avatar {
+        transform: scale(0.75);
+        transform-origin: center;
+      }
+
+      .chat-badge img {
+        width: 16px;
+        height: 16px;
+      }
+
+      .chat-name {
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .chat-name.moderator {
+        color: #ffb703;
+      }
+
+      .chat-name.member {
+        color: #2ba13f;
+      }
+
+      .chat-badge {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 6px;
+        white-space: nowrap;
+      }
+
+      .member-badge {
+        background: rgba(138, 180, 255, 0.15);
+        color: #8ab4ff;
+      }
+
+      .moderator-badge {
+        background: rgba(255, 183, 3, 0.15);
+        color: #ffb703;
+      }
+
+      .chat-message {
+        color: #e0e0e0;
+        word-break: break-word;
+      }
+
+      /* マウスホバーで少しハイライト */
+      .chat-line:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .chat-line .time {
+        color: var(--subtext);
+        min-width: 40px;
+      }
+
+      .chat-empty {
+        color: #888;
+        text-align: center;
+        font-size: 12px;
+        padding: 20px;
+      }
+
+      /* ==================================================
+   9) PLAYER LAYOUT（動画プレイヤー）
+================================================== */
+
+      .player-layout {
+        display: grid;
+        grid-template-columns: 1.18fr 400px;
+        align-items: start;
+      }
+
+      .player-main {
+        border: 1px solid #30303000;
+        border-radius: 8px;
+        padding: 12px 16px 0px 0px;
+        /* box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6); */
+        overflow: hidden;
+        position: relative;
+        /* backdrop-filter: blur(2px); */
+      }
+
+      .player-video-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: black;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .player-video-wrap:fullscreen,
+      .player-video-wrap:-webkit-full-screen {
+        width: 100vw;
+        height: 100vh;
+        max-width: none;
+        aspect-ratio: auto;
+        border-radius: 0;
+        background: #000;
+      }
+
+      #local-player {
+        position: absolute; /* 親にピッタリ合わせる */
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain; /* 縦横比を崩さず中央表示 */
+        background: black;
+      }
+
+      .player-info {
+        margin-top: 14px;
+        padding: 0 6px;
+      }
+
+      .player-title,
+      .yt-title {
+          font-size: 18px;
+          font-weight: 600;
+          line-height: 1.3;
+        }
+
+      .player-meta,
+      .yt-meta {
+        color: #aaa;
+        font-size: 12px;
+        margin-top: 6px;
+      }
+
+      .yt-info {
+        padding: 12px 14px 14px;
+      }
+
+      .yt-volume {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: white;
+      }
+
+      #volume-bar {
+        width: 80px;
+        height: 4px;
+        appearance: none;
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 2px;
+        cursor: pointer;
+      }
+
+      /* スライダーつまみ */
+      #volume-bar::-webkit-slider-thumb {
+        appearance: none;
+        width: 12px;
+        height: 12px;
+        background: white;
+        border-radius: 50%;
+      }
+
+      /* サイドバー */
+      .player-sidebar {
+        background: transparent;
+        border: none;
+        border-radius: 14px;
+        padding: 12px 16px 0px 0px;
+        overflow-y: auto;
+        /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6); */
+        min-width: 400px;
+      }
+
+      .sidebar-title {
+        font-weight: 700;
+        margin-bottom: 8px;
+        padding: 0px 0px 0px 8px;
+      }
+
+      /* ===== サイドバーのヘッダー（タイトル＋ボタン） ===== */
+      .sidebar-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      /* 開閉ボタン */
+      .sidebar-toggle {
+        background: transparent;
+        border: none;
+        color: #aaa;
+        cursor: pointer;
+        font-size: 12px;
+        padding: 0px 12px;
+        border-radius: 6px;
+      }
+
+      .sidebar-toggle:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      /* FontAwesomeアイコンのサイズ調整 */
+      .sidebar-toggle i {
+        font-size: 12px;
+        transition: transform 0.2s ease;
+      }
+
+      /* 折りたたみ時にアイコンを回転させたい場合（オプション） */
+      .player-sidebar.collapsed .sidebar-toggle i {
+        transform: rotate(-90deg);
+      }
+
+      /* ===== 並び替えメニュー ===== */
+      .sort-btn,
+      .filter-btn {
+        background: transparent;
+        border: none;
+        color: var(--subtext);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border-radius: 4px;
+      }
+      .sort-btn:hover,
+      .filter-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text);
+      }
+
+      .sort-menu,
+      .filter-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: #282828;
+        border-radius: 12px;
+        padding: 8px 0;
+        width: 150px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+        z-index: 100;
+        margin-top: 4px;
+      }
+      .filter-menu {
+        width: 200px;
+        top: auto;
+        bottom: 100%;
+        margin-top: 0;
+        margin-bottom: 4px;
+      }
+      .sort-menu.hidden {
+        display: none;
+      }
+      .filter-menu.hidden {
+        display: none;
+      }
+
+      .sort-item,
+      .filter-item {
+        padding: 10px 16px;
+        font-size: 14px;
+        color: var(--text);
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+      .sort-item:hover,
+      .filter-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .sort-item.active,
+      .filter-item.active {
+        background: rgba(255, 255, 255, 0.2);
+        font-weight: bold;
+      }
+
+      /* ===== ローカル動画アイテム ===== */
+      .player-sidebar.collapsed {
+        padding: 10px 8px;
+      }
+
+      /* タイトルの下マージンも消す */
+      .player-sidebar.collapsed .sidebar-header {
+        margin-bottom: 0;
+      }
+
+      .sidebar-live_chat {
+        background: rgba(0, 0, 0, 0.2);
+        margin-bottom: 12px;
+        border-radius: 15px;
+        backdrop-filter: blur(2px);
+        backdrop-filter: brightness(0.5);
+      }
+
+      /* 最後のセクションは余白を消す */
+      .sidebar-live_chat:last-child {
+        margin-bottom: 0;
+      }
+
+      /* 折りたたみ時：そのセクションの中身だけ隠す */
+      .sidebar-live_chat.collapsed .sidebar-content {
+        display: none;
+        overflow-y: auto;
+        flex: 1;
+      }
+
+      /* 折りたたみ時：ヘッダー下の余白を消す */
+      .sidebar-live_chat.collapsed .sidebar-header {
+        margin-bottom: 0;
+      }
+
+      /* 最後のセクションの余白は不要 */
+      .sidebar-live_chat:last-child {
+        margin-bottom: 0;
+      }
+
+      /* セクション内のヘッダーを整える */
+      .sidebar-live_chat .sidebar-header {
+        margin-bottom: 6px;
+      }
+
+      /* 折りたたみ時はヘッダーだけ残す */
+      .sidebar-live_chat.collapsed {
+        padding-bottom: 6px;
+      }
+
+      .sidebar-local_movie {
+        border-radius: 15px;
+        /* backdrop-filter: blur(2px);
+        backdrop-filter: brightness(0.5); */
+      }
+
+      /* 最後のセクションは余白を消す */
+      .sidebar-local_movie:last-child {
+        margin-bottom: 0;
+      }
+
+      /* 折りたたみ時：そのセクションの中身だけ隠す */
+      .sidebar-local_movie.collapsed .sidebar-content {
+        display: none;
+        overflow-y: auto;
+        flex: 1;
+      }
+
+      /* 折りたたみ時：ヘッダー下の余白を消す */
+      .sidebar-local_movie.collapsed .sidebar-header {
+        margin-bottom: 0;
+      }
+
+      /* 最後のセクションの余白は不要 */
+      .sidebar-local_movie:last-child {
+        margin-bottom: 0;
+      }
+
+      /* セクション内のヘッダーを整える */
+      .sidebar-local_movie .sidebar-header {
+        /* margin-bottom: 6px; */
+      }
+
+      /* 折りたたみ時はヘッダーだけ残す */
+      .sidebar-local_movie.collapsed {
+        padding-bottom: 6px;
+      }
+
+      .settings-collapsible-section {
+        margin-top: 10px;
+      }
+
+      .settings-collapsible-section .sidebar-header {
+        margin-bottom: 6px;
+      }
+
+      .settings-collapsible-section.collapsed .sidebar-content {
+        display: none;
+      }
+
+      .settings-collapsible-section.collapsed .sidebar-header {
+        margin-bottom: 0;
+      }
+
+      .settings-collapsible-section.collapsed .sidebar-toggle i {
+        transform: rotate(-90deg);
+      }
+
+      .chat-content {
+        display: flex;
+        flex-direction: column;
+        border-radius: 10px;
+        padding: 8px;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+      }
+
+      /* スクロールバーを細くする（YouTube風） */
+      .chat-content::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .chat-content::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+      }
+
+      .chat-content::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      /* ライブチャットだけ少しだけ色を変える（さりげなく） */
+      #chat-section {
+        max-height: 650px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #chat-section .sidebar-content {
+        flex: 1;
+        overflow-y: auto; /* 中身だけスクロール */
+      }
+
+      /* ===== 概要欄 ===== */
+      .yt-description {
+        margin-top: 12px;
+        padding: 12px;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 400;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        font-family: Arial, sans-serif;
+      }
+
+      /* ===== 概要欄のリンク ===== */
+      .yt-description a.desc-link,
+      .yt-description a.timestamp-link {
+        color: #8ab4ff; /* YouTubeっぽい青 */
+        text-decoration: none;
+      }
+
+      .yt-description a.desc-link:hover,
+      .yt-description a.timestamp-link:hover {
+        text-decoration: underline;
+      }
+
+      /* ===== 概要欄の折りたたみ ===== */
+      .yt-description-content {
+        width: 100%;
+        white-space: pre-wrap; /* 改行をそのまま表示 */
+      }
+
+      .yt-description-content.collapsed {
+        display: -webkit-box;
+        -webkit-line-clamp: 5;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .yt-description.expandable {
+        cursor: pointer;
+      }
+
+      .yt-desc-collapse-btn {
+        margin-top: 8px;
+        background: transparent;
+        border: none;
+        color: #8ab4ff;
+        padding: 4px 0;
+        cursor: pointer;
+        font-size: 13px;
+        display: none;
+      }
+
+      .yt-desc-collapse-btn:hover {
+        text-decoration: underline;
+      }
+
+      /* ===== コメント欄（YouTube風） ===== */
+      .comment-section {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: none; /* YouTubeは区切り線なし */
+      }
+
+      .comment-section .sidebar-header {
+        margin-bottom: 8px;
+      }
+
+      .comment-content.collapsed {
+        display: none;
+      }
+
+      .comment-header {
+        font-weight: bold;
+        font-size: 20px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .video-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .youtube-link-btn {
+        display: none;
+        color: #ff0000;
+      }
+
+      .youtube-link-icon {
+        font-size: 24px;
+      }
+
+      .video-stats {
+        margin-left: auto;
+        display: flex;
+        gap: 16px;
+        color: #aaa;
+        font-size: 14px;
+        align-items: center;
+      }
+
+      .comment-header-row {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .comment-count-label {
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .comment-controls {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .sort-container {
+        position: relative;
+      }
+
+      .filter-container {
+        position: relative;
+      }
+
+      .comment-empty {
+        display: none;
+      }
+
+      .settings-inline-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .settings-gap-8 {
+        gap: 8px;
+      }
+
+      .settings-gap-10 {
+        gap: 10px;
+      }
+
+      .settings-stack {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .settings-stack-8 {
+        gap: 8px;
+      }
+
+      .settings-stack-10 {
+        gap: 10px;
+      }
+
+      .settings-stack-wide {
+        min-width: 460px;
+        max-width: 700px;
+        width: 100%;
+        margin-left: auto;
+      }
+
+      .settings-stack-log {
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+        overflow: hidden;
+        flex: 1 1 auto;
+      }
+
+      #console-log-toolbar {
+        align-items: center;
+      }
+
+      #console-log-toolbar small {
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+
+      #console-log-search {
+        margin-left: 12px;
+        flex: 1 1 260px;
+        min-width: 180px;
+      }
+
+      .settings-actions-right {
+        width: 100%;
+        text-align: right;
+      }
+
+      .settings-inline-right {
+        justify-content: flex-end;
+      }
+
+      .settings-stack-tool {
+        flex: none;
+        margin-left: auto;
+        width: 800px;
+      }
+
+      .settings-hint-blue {
+        color: var(--blue);
+        margin-top: 4px;
+      }
+
+      .settings-error-text {
+        color: var(--accent);
+        font-size: 12px;
+        min-height: 1.2em;
+      }
+
+      .settings-hidden-input {
+        display: none;
+      }
+
+      .settings-textarea-lg {
+        min-height: 120px;
+      }
+
+      .info-updates-details {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 10px 12px;
+      }
+
+      .info-updates-details summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        list-style: none;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .info-updates-details summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .info-updates-details summary::after {
+        content: "\f078";
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        color: var(--subtext);
+        transition: transform 0.2s ease;
+      }
+
+      .info-updates-details[open] summary::after {
+        transform: rotate(180deg);
+      }
+
+      .info-updates-list {
+        padding: 0;
+        list-style: none;
+      }
+
+      .info-updates-toolbar {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+
+      .info-updates-filter-btn {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--subtext);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          background 0.2s ease,
+          color 0.2s ease,
+          border-color 0.2s ease;
+      }
+
+      .info-updates-filter-btn:hover {
+        color: var(--text);
+        border-color: rgba(255, 255, 255, 0.18);
+      }
+
+      .info-updates-filter-btn.active {
+        background: rgba(58, 160, 255, 0.16);
+        color: var(--text);
+        border-color: rgba(58, 160, 255, 0.45);
+      }
+
+      .info-updates-item {
+        display: grid;
+        grid-template-columns: 88px 72px 1fr;
+        gap: 10px;
+        padding: 6px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        font-size: 14px;
+      }
+
+      .info-updates-item.info-updates-item-hidden {
+        display: none !important;
+      }
+
+      .info-updates-item:first-child {
+        border-top: none;
+        padding-top: 0;
+      }
+
+      .info-updates-date,
+      .info-updates-version {
+        color: var(--subtext);
+        white-space: nowrap;
+      }
+
+      .info-updates-content {
+        color: var(--text);
+      }
+
+      .settings-input-full {
+        width: 100%;
+      }
+
+      .settings-input-flex {
+        flex: 1;
+      }
+
+      .wallpaper-label {
+        min-width: 60px;
+      }
+
+      .settings-toggle-top {
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .console-log-panel {
+        border-radius: 10px;
+        background: rgb(255 255 255 / 5%);
+        min-height: 260px;
+        max-height: 640px;
+        max-width: 100%;
+        width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: auto;
+        padding: 10px;
+        box-sizing: border-box;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 12px;
+        line-height: 1.45;
+        contain: inline-size;
+      }
+
+      .console-log-line {
+        display: block;
+        white-space: nowrap;
+        word-break: normal;
+        padding: 2px 0;
+      }
+
+      .console-log-line.level-error {
+        color: #ff8a80;
+      }
+
+      .console-log-line.level-warn {
+        color: #ffd180;
+      }
+
+      .console-log-line.level-info {
+        color: #b9f6ca;
+      }
+
+      .console-log-ts {
+        color: #9bb7ff;
+      }
+
+      .console-log-level {
+        font-weight: 700;
+      }
+
+      .console-log-level.level-error {
+        color: #ff8a80;
+      }
+
+      .console-log-level.level-warn {
+        color: #ffd180;
+      }
+
+      .console-log-level.level-info {
+        color: #b9f6ca;
+      }
+
+      .console-log-scope {
+        color: #9fd9ff;
+      }
+
+      .console-log-message {
+        color: #e2e2e2;
+      }
+
+      .btn-ui {
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .btn-ui.btn-blue {
+        background: var(--blue);
+      }
+
+      .btn-ui.btn-green {
+        background: var(--green);
+      }
+
+      .btn-ui.btn-red {
+        background: #c0392b;
+      }
+
+      .btn-ui.btn-dark {
+        background: #333;
+      }
+
+      .btn-ui.btn-gray {
+        background: #444;
+      }
+
+      .btn-ui.btn-tight {
+        padding: 8px 12px;
+      }
+
+      .btn-ui.btn-narrow {
+        padding: 8px 9px;
+      }
+
+      .btn-ui.btn-copy {
+        border: none;
+        color: #fff;
+        white-space: nowrap;
+      }
+
+      .card-margin-top-20 {
+        margin-top: 20px;
+      }
+
+      .status-warn-text {
+        color: var(--warn);
+      }
+
+      .status-subtext {
+        color: var(--subtext);
+      }
+
+      .app-feedback {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        z-index: 5000;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        pointer-events: none;
+      }
+
+      .app-feedback-item {
+        min-width: 240px;
+        max-width: 420px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        color: var(--text);
+        background: rgba(15, 20, 26, 0.88);
+        border: 1px solid var(--card-border);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .app-feedback-item.tone-info {
+        border-color: rgba(58, 141, 222, 0.65);
+      }
+
+      .app-feedback-item.tone-success {
+        border-color: rgba(44, 145, 108, 0.65);
+      }
+
+      .app-feedback-item.tone-error {
+        border-color: rgba(239, 83, 80, 0.75);
+      }
+
+      .info-value-wide {
+        width: 80%;
+      }
+
+      .comment-count {
+        color: var(--subtext);
+        font-weight: normal;
+        font-size: 16px;
+      }
+
+      .comment-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        overflow-y: auto;
+      }
+
+      /* 個々のコメントアイテム */
+      .comment-item,
+      .comment-reply {
+        display: flex;
+        gap: 10px;
+        padding: 10px;
+        border-bottom: none;
+        align-items: flex-start;
+        position: relative;
+      }
+
+      .comment-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+        background-color: #222;
+      }
+
+      /* 返信のアイコンは少し小さい */
+      .comment-reply .comment-avatar {
+        width: 28px;
+        height: 28px;
+      }
+
+      .comment-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0; /* テキスト折り返し用 */
+        position: relative;
+      }
+
+      /* ヘッダー行（名前 + 時間） */
+      .comment-meta {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .comment-author {
+        font-weight: 700;
+        color: #f1f1f1;
+        text-decoration: none;
+        margin-right: 6px;
+      }
+
+      .comment-author:hover {
+        /* YouTubeは名前ホバーしても特に変わらないが、リンクならアンダーライン */
+        /* text-decoration: underline; */
+      }
+
+      .comment-time {
+        color: #aaa;
+        font-size: 12px;
+      }
+
+      .comment-time:hover {
+        color: var(--text); /* YouTubeはホバーで白くなる */
+      }
+
+      /* コメント本文 */
+      .comment-text {
+        font-size: 14px;
+        line-height: 1.4;
+        color: var(--text);
+        white-space: pre-wrap;
+        margin-top: 2px;
+      }
+
+      /* ===== コメント本文の折りたたみ ===== */
+      .comment-text.clamped {
+        display: -webkit-box;
+        -webkit-line-clamp: 4; /* YouTubeは4行くらい */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .comment-more {
+        background: transparent;
+        border: none;
+        color: var(--subtext); /* YouTubeはグレー */
+        font-weight: bold;
+        font-size: 12px;
+        padding: 4px 0;
+        cursor: pointer;
+        align-self: flex-start;
+        margin-top: 4px;
+      }
+
+      .comment-more:hover {
+        text-decoration: underline; /* YouTubeはホバーで下線かも */
+      }
+
+      /* アクションボタン群（高評価・低評価・返信） */
+      .comment-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px; /* ボタン間の隙間 */
+        margin-top: 4px;
+      }
+
+      .action-btn {
+        background: transparent;
+        border: none;
+        color: var(--text);
+        font-size: 12px;
+        padding: 6px 8px; /* ヒットエリア確保 */
+        border-radius: 18px; /* 丸み */
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: background 0.1s;
+      }
+
+      .action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .action-btn i {
+        font-size: 14px; /* アイコンサイズ */
+      }
+
+      .comment-replies {
+        /* margin-left: 56px; */
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .comment-reply {
+        /* 返信自体も gap: 16px だが、親からのマージン等は comment-replies で制御 */
+      }
+
+      /* ローカル動画一覧 */
+      .local-video-item {
+        display: grid;
+        grid-template-columns: 160px 1fr auto;
+        gap: 10px;
+        padding: 8px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.1s ease;
+      }
+
+      .local-video-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .local-video-item.active {
+        background: rgba(255, 255, 255, 0.12);
+        border-left: 3px solid #ffffff;
+      }
+
+      .local-video-thumb {
+        width: 160px;
+        height: 90px;
+        background: var(--black-panel);
+        border-radius: 8px;
+        object-fit: cover;
+      }
+
+      .local-video-text {
+          min-width: 0;
+          font-size: 13px;
+        }
+
+      .local-video-item-title {
+          font-size: 13px;
+          line-height: 1.35;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 3;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          word-break: break-word;
+        }
+
+      .local-video-item-channel {
+          margin-top: 4px;
+          font-size: 12px;
+          color: #aaa;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+      .local-video-item-meta {
+          margin-top: 2px;
+          font-size: 12px;
+          color: #aaa;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+      .local-video-option-btn {
+        align-self: center;
+        justify-self: end;
+        width: 28px;
+        height: 28px;
+        /* border: 1px solid #ffffff00; */
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        color: var(--text);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.12s ease, border-color 0.12s ease;
+      }
+
+      .local-video-option-btn:hover {
+        background: #252525aa;
+      }
+
+      .local-video-option-btn:focus-visible {
+        outline: 2px solid rgba(255, 255, 255, 0.35);
+        outline-offset: 1px;
+      }
+
+      .local-video-options-menu {
+        position: fixed;
+        min-width: 220px;
+        background: #171717d6;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+        padding: 6px;
+        z-index: 3000;
+      }
+
+      .local-video-options-menu.hidden {
+        display: none;
+      }
+
+      .local-video-options-item {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: var(--text);
+        text-align: left;
+        padding: 7px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        line-height: 1.35;
+      }
+
+      .local-video-options-item:hover {
+        background: #232323;
+      }
+
+      .local-video-options-item:focus-visible {
+        outline: 2px solid rgba(255, 255, 255, 0.3);
+        outline-offset: 1px;
+      }
+
+      .playlist-save-panel {
+        position: fixed;
+        width: min(420px, calc(100vw - 24px));
+        background: #171717;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+        z-index: 3010;
+        padding: 8px;
+      }
+
+      .playlist-save-panel.hidden {
+        display: none;
+      }
+
+      .playlist-save-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 4px 8px 8px;
+      }
+
+      .playlist-save-list {
+        max-height: 340px;
+        overflow-y: auto;
+      }
+
+      .playlist-save-row {
+        display: grid;
+        grid-template-columns: 48px 1fr 32px;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 8px;
+        border-radius: 8px;
+      }
+
+      .playlist-save-row:hover {
+        background: #232323;
+      }
+
+      .playlist-save-thumb {
+        width: 48px;
+        height: 27px;
+        border-radius: 6px;
+        object-fit: cover;
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .playlist-save-name {
+        font-size: 13px;
+        line-height: 1.2;
+      }
+
+      .playlist-save-sub {
+        font-size: 12px;
+        color: var(--subtext);
+      }
+
+      .playlist-save-action {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #1d1d1d;
+        color: var(--text);
+        cursor: pointer;
+      }
+
+      .playlist-save-create {
+        margin-top: 8px;
+        width: 100%;
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #1d1d1d;
+        color: var(--text);
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .playlist-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 3020;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+      }
+
+      .playlist-modal-backdrop.hidden {
+        display: none;
+      }
+
+      .playlist-modal {
+        width: min(460px, calc(100vw - 24px));
+        background: #171717;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+      }
+
+      .playlist-modal-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 10px;
+      }
+
+      .playlist-modal-input {
+        width: 100%;
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #1b1b1b;
+        color: var(--text);
+        padding: 0 10px;
+        margin-bottom: 12px;
+        font-size: 12px;
+      }
+
+      .playlist-modal-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .playlist-modal-btn {
+        flex: 1;
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #1d1d1d;
+        color: var(--text);
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .report-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.58);
+        z-index: 3050;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+
+      .report-modal-backdrop.hidden {
+        display: none;
+      }
+
+      .report-modal {
+        width: min(560px, calc(100vw - 32px));
+        background: #171717;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px;
+      }
+
+      .format-report-loading-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.62);
+        z-index: 3060;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+
+      .format-report-loading-backdrop.hidden {
+        display: none;
+      }
+
+      .format-report-loading-modal {
+        width: min(420px, calc(100vw - 32px));
+        background: #171717;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 24px 22px;
+        text-align: center;
+      }
+
+      .format-report-loading-title {
+        margin: 0 0 8px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .format-report-loading-copy {
+        color: var(--subtext);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .format-report-loading-spinner {
+        width: 42px;
+        height: 42px;
+        margin: 0 auto 14px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.16);
+        border-top-color: var(--blue);
+        animation: format-report-spin 0.85s linear infinite;
+      }
+
+      @keyframes format-report-spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .report-modal-title {
+        margin: 0 0 10px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .report-modal-copy {
+        color: var(--subtext);
+        font-size: 13px;
+        margin-bottom: 12px;
+      }
+
+      .report-modal-list {
+        margin: 0 0 14px 18px;
+        padding: 0;
+      }
+
+      .report-modal-list li {
+        margin-bottom: 6px;
+        color: var(--text);
+      }
+
+      .report-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .report-modal-actions.wrap {
+        flex-wrap: wrap;
+      }
+
+      .report-modal-actions.wrap .btn-ui {
+        flex: 1 1 140px;
+      }
+
+      .info-item-action {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .info-inline-btn {
+        min-width: 108px;
+      }
+
+      .info-inline-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .download-confirm-modal-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 12px 0 4px;
+        color: var(--text);
+        font-size: 13px;
+      }
+
+      .download-confirm-modal-check input {
+        width: 16px;
+        height: 16px;
+      }
+
+      .download-confirm-modal-errors {
+        margin-top: 16px;
+      }
+
+      .download-confirm-modal-errors.hidden {
+        display: none;
+      }
+
+      .download-confirm-modal-errors-copy {
+        margin: 0 0 10px;
+        color: var(--subtext);
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      .download-confirm-modal-errors-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .download-confirm-modal-error-card {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 12px;
+        align-items: start;
+        padding: 14px 14px 12px 16px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 76, 112, 0.32);
+        background: #0f0f10;
+      }
+
+      .download-confirm-modal-error-icon {
+        color: #ff5a7a;
+        font-size: 28px;
+        line-height: 1;
+        font-weight: 700;
+        padding-top: 4px;
+      }
+
+      .download-confirm-modal-error-body {
+        min-width: 0;
+      }
+
+      .download-confirm-modal-error-title {
+        margin: 0 0 6px;
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+
+      .download-confirm-modal-error-message {
+        color: #f0f0f0;
+        font-size: 12px;
+        line-height: 1.6;
+        word-break: break-word;
+        white-space: pre-wrap;
+      }
+
+      .download-confirm-modal-error-urls {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 108px;
+        overflow-y: auto;
+        padding: 8px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .download-confirm-modal-error-hint {
+        margin-bottom: 8px;
+        color: var(--accent);
+        font-size: 12px;
+        line-height: 1.6;
+        font-weight: 700;
+        word-break: break-word;
+      }
+
+      .failed-url-modal-copy {
+        margin-bottom: 10px;
+      }
+
+      .failed-url-modal-count {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      .failed-url-modal-preview {
+        width: 100%;
+        min-height: 180px;
+        resize: vertical;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #111;
+        color: var(--text);
+        padding: 12px;
+        font: inherit;
+        line-height: 1.6;
+      }
+
+      .failed-url-modal-preview:focus {
+        outline: 1px solid rgba(255, 255, 255, 0.18);
+      }
+
+      .estimate-loading-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.62);
+        z-index: 3060;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+
+      .estimate-loading-backdrop.hidden {
+        display: none;
+      }
+
+      .estimate-loading-modal {
+        width: min(420px, calc(100vw - 32px));
+        background: #171717;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 24px 22px;
+        text-align: center;
+      }
+
+      .estimate-loading-title {
+        margin: 0 0 8px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .estimate-loading-copy {
+        color: var(--subtext);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .estimate-loading-spinner {
+        width: 42px;
+        height: 42px;
+        margin: 0 auto 14px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.16);
+        border-top-color: var(--blue);
+        animation: estimate-loading-spin 0.85s linear infinite;
+      }
+
+      @keyframes estimate-loading-spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .feedback-modal {
+        width: min(760px, calc(100vw - 32px));
+        max-height: min(84vh, 920px);
+        overflow: auto;
+      }
+
+      .feedback-modal-form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-bottom: 12px;
+      }
+
+      .feedback-modal-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
+        gap: 12px 16px;
+        align-items: start;
+      }
+
+      .feedback-modal-label {
+        padding-top: 10px;
+        color: var(--subtext);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .feedback-modal-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .feedback-modal-field input,
+      .feedback-modal-field select,
+      .feedback-modal-field textarea {
+        width: 100%;
+        background: #1b1b1b;
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font: inherit;
+      }
+
+      .feedback-modal-field textarea {
+        min-height: 160px;
+        resize: vertical;
+      }
+
+      @media (max-width: 700px) {
+        .feedback-modal-grid {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+
+        .feedback-modal-label {
+          padding-top: 0;
+        }
+      }
+
+      .playlist-controls {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+      }
+
+      .playlist-controls input,
+      .playlist-controls select {
+        background: #1b1b1b;
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 8px;
+        height: 32px;
+        padding: 0 8px;
+      }
+
+      #playlist-select {
+        min-width: 140px;
+        flex: 1 1 140px;
+      }
+
+      #playlist-name-input {
+        min-width: 140px;
+        flex: 1 1 140px;
+      }
+
+      .playlist-btn {
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #1d1d1d;
+        color: var(--text);
+        padding: 0 10px;
+        cursor: pointer;
+      }
+
+      .playlist-items {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .playlist-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .playlist-item-title {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .playlist-item-remove {
+        height: 24px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+        padding: 0 8px;
+        cursor: pointer;
+        font-size: 11px;
+      }
+
+      /* ホーム：ローカル動画グリッド */
+      .home-video-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 18px;
+        padding: 18px;
+      }
+
+      .home-video-card {
+        cursor: pointer;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.15s ease;
+      }
+
+      .home-video-card:hover {
+        transform: translateY(-2px);
+      }
+
+      .home-video-card-thumb {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 12px;
+        background: var(--black-panel);
+        object-fit: cover;
+        display: block;
+      }
+
+      .home-video-card-thumb-wrap {
+        position: relative;
+      }
+
+      .home-video-card-duration {
+        position: absolute;
+        right: 8px;
+        bottom: 8px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: rgb(0 0 0 / 75%);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.2;
+        display: none;
+        pointer-events: none;
+      }
+
+      .home-video-card-duration.visible {
+        display: inline-block;
+      }
+
+      .home-video-card-title {
+        margin-top: 10px;
+        font-size: 14px;
+        line-height: 1.4;
+        color: var(--text);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .home-video-card-meta {
+        display: grid;
+        grid-template-columns: 36px 1fr 28px;
+        gap: 10px;
+        margin-top: 10px;
+        align-items: flex-start;
+      }
+
+      .home-video-channel-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #222;
+      }
+
+      .home-video-card-texts {
+        min-width: 0;
+      }
+
+      .home-video-option-btn {
+        width: 28px;
+        height: 28px;
+        justify-self: end;
+        align-self: start;
+      }
+
+      .home-video-card-title {
+        margin-top: 0;
+        font-weight: 600;
+      }
+
+      .home-video-card-channel,
+      .home-video-card-stats {
+        margin-top: 3px;
+        font-size: 12px;
+        line-height: 1.35;
+        color: var(--subtext);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .home-video-empty {
+        color: var(--subtext);
+        padding: 8px;
+      }
+
+      .playlist-page {
+        padding: 16px;
+      }
+
+      .playlist-page-grid {
+        display: grid;
+        gap: 18px;
+      }
+
+      .playlist-page-section {
+        display: grid;
+        gap: 10px;
+      }
+
+      .playlist-page-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .playlist-page-section-title {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 800;
+      }
+
+      .playlist-page-section-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .playlist-page-expand-btn {
+        min-height: 36px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        padding: 0 14px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .playlist-page-expand-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .playlist-page-section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 16px;
+      }
+
+      .playlist-page-horizontal-scroll {
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+        padding-bottom: 4px;
+      }
+
+      .playlist-page-horizontal-track {
+        display: flex;
+        gap: 14px;
+        align-items: stretch;
+        min-width: min-content;
+      }
+
+      .playlist-page-detail-layout {
+        width: 100%;
+        display: grid;
+        grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .playlist-page-detail-side {
+        position: sticky;
+        top: 14px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .playlist-page-card {
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 14px;
+        overflow: hidden;
+        cursor: pointer;
+        min-width: 320px;
+        max-width: 320px;
+      }
+
+      .playlist-page-section-grid .playlist-page-card {
+        min-width: 0;
+        max-width: none;
+      }
+
+      .playlist-page-thumb {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        background: rgba(255, 255, 255, 0.05);
+        display: block;
+      }
+
+      .playlist-page-card-body {
+        padding: 10px 12px 12px;
+      }
+
+      .playlist-page-card-title {
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .playlist-page-card-meta {
+        color: #ddd;
+        font-size: 15px;
+      }
+
+      .playlist-page-channel-card {
+        width: 164px;
+        min-width: 164px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        border: 0;
+        background: transparent;
+        color: var(--text);
+        padding: 8px 4px;
+        cursor: pointer;
+        text-align: center;
+      }
+
+      .playlist-page-channel-avatar {
+        width: 112px;
+        height: 112px;
+        border-radius: 999px;
+        object-fit: cover;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .playlist-page-channel-name {
+        width: 100%;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .playlist-page-channel-meta {
+        width: 100%;
+        color: var(--subtext);
+        font-size: 12px;
+        line-height: 1.4;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .playlist-page-back-btn {
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #00000000;
+        color: var(--text);
+        padding: 0 12px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-bottom: 10px;
+      }
+
+      .playlist-summary-card {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.35);
+        display: grid;
+        gap: 8px;
+      }
+
+      .playlist-summary-thumb {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        display: block;
+      }
+
+      .playlist-summary-title {
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.25;
+        word-break: break-word;
+      }
+
+      .playlist-summary-meta {
+        font-size: 13px;
+        color: var(--subtext);
+      }
+
+      .playlist-page-video-list {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .playlist-page-video-row {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        /* background: rgba(0, 0, 0, 0.35); */
+        padding: 8px;
+        cursor: pointer;
+      }
+
+      .playlist-page-video-row:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .playlist-page-video-thumb {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        display: block;
+      }
+
+      .playlist-page-video-body {
+        min-width: 0;
+      }
+
+      .playlist-page-video-title {
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.3;
+        margin-bottom: 4px;
+      }
+
+      .playlist-page-video-meta {
+        font-size: 12px;
+        color: var(--subtext);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .playlist-page-channel-detail {
+        display: grid;
+        gap: 16px;
+      }
+
+      .playlist-page-channel-hero {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.32);
+      }
+
+      .playlist-page-channel-banner-wrap {
+        width: 100%;
+        aspect-ratio: 16 / 4;
+        background:
+          radial-gradient(circle at top left, rgba(255, 0, 0, 0.24), transparent 45%),
+          linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.24));
+      }
+
+      .playlist-page-channel-banner {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .playlist-page-channel-hero-body {
+        display: grid;
+        grid-template-columns: 136px 1fr;
+        gap: 18px;
+        align-items: center;
+        padding: 18px;
+      }
+
+      .playlist-page-channel-hero-avatar {
+        width: 136px;
+        height: 136px;
+        border-radius: 999px;
+        object-fit: cover;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+      }
+
+      .playlist-page-channel-hero-text {
+        min-width: 0;
+      }
+
+      .playlist-page-channel-hero-title {
+        margin: 0 0 8px;
+        font-size: 30px;
+        font-weight: 800;
+        line-height: 1.15;
+      }
+
+      .playlist-page-channel-hero-meta {
+        color: var(--subtext);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .playlist-page-channel-tabs {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding-bottom: 8px;
+        overflow-x: auto;
+      }
+
+      .playlist-page-channel-tab-btn {
+        min-height: 38px;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--subtext);
+        padding: 0 14px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .playlist-page-channel-tab-btn.active {
+        background: rgba(255, 255, 255, 0.14);
+        color: var(--text);
+      }
+
+      .playlist-page-channel-video-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 16px;
+      }
+
+      .playlist-page-channel-video-card {
+        display: grid;
+        gap: 10px;
+        cursor: pointer;
+      }
+
+      .playlist-page-channel-video-thumb {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        border-radius: 12px;
+        display: block;
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .playlist-page-channel-video-body {
+        min-width: 0;
+      }
+
+      .playlist-page-channel-video-title {
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.35;
+        margin-bottom: 5px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .playlist-page-channel-video-meta {
+        color: var(--subtext);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      /* ==================================================
+   10) PLAYER CONTROLS（YouTube風）
+================================================== */
+
+      .yt-controls {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 12px 12px;
+        background: linear-gradient(
+          to top,
+          rgba(0, 0, 0, 0.9),
+          rgba(0, 0, 0, 0.4),
+          rgba(0, 0, 0, 0)
+        );
+
+        /* 自動表示/非表示制御 */
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+
+      /* 表示用クラス */
+      .yt-controls.show {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .yt-btn {
+        background: transparent;
+        border: none;
+        color: white;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 16px;
+        transition:
+          background 0.15s ease,
+          transform 0.05s ease;
+      }
+
+      .yt-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .yt-btn:active {
+        transform: scale(0.95);
+        background: rgba(255, 255, 255, 0.18);
+      }
+
+      #seek-bar {
+        flex: 1;
+        height: 4px;
+        border-radius: 2px;
+        appearance: none;
+        cursor: pointer;
+        transition: background 0.1s linear;
+        transform: translateY(-3px); /* ← ここで高さ調整 */
+        padding: 8px 0; /* 上下の当たり判定を拡大 */
+        background-clip: content-box; /* padding部分を透明に */
+      }
+
+      /* ===== 音量スライダー：ホバー時のみ表示 ===== */
+      .yt-volume-hover {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        overflow: hidden;
+      }
+
+      /* 普段はスライダーを隠す */
+      .yt-volume-hover #volume-bar {
+        width: 0;
+        opacity: 0;
+        transition:
+          width 0.15s ease,
+          opacity 0.15s ease;
+        transform: translateY(-3px); /* ← ここで高さ調整 */
+      }
+
+      /* スピーカーにカーソルを合わせた時だけ表示 */
+      .yt-volume-hover:hover #volume-bar {
+        width: 90px; /* YouTubeっぽい幅 */
+        opacity: 1;
+      }
+
+      /* ===== YouTube風ツールチップ ===== */
+      .yt-skip {
+        position: relative;
+      }
+
+      .yt-skip::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 130%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease;
+      }
+
+      .yt-skip:hover::after {
+        opacity: 1;
+      }
+
+      /* つまみ（ノブ）も少し映えるように */
+      #seek-bar::-webkit-slider-thumb {
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        background: #ff0000;
+        border-radius: 50%;
+        box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
+        transform: translateY(-5px); /* 位置微調整 */
+        transition:
+          transform 0.1s ease,
+          left 0.12s linear;
+      }
+
+      #seek-bar::-moz-range-track {
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.25);
+        transition: transform 0.1s ease;
+      }
+
+      #seek-bar::-moz-range-progress {
+        height: 4px;
+        background: #ff0000;
+      }
+
+      #seek-bar::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        background: #ff0000;
+        border-radius: 50%;
+        border: none;
+      }
+
+      #seek-bar::-webkit-slider-runnable-track {
+        height: 4px;
+        border-radius: 2px;
+        background: linear-gradient(
+          to right,
+          #ff0000 var(--progress, 0%),
+          rgba(255, 255, 255, 0.25) var(--progress, 0%)
+        );
+      }
+
+      #seek-bar:hover {
+        background: rgba(255, 255, 255, 0.35);
+        background-clip: content-box; /* ホバー時もpadding部分を透明に */
+      }
+
+      #seek-bar:hover::-webkit-slider-thumb {
+        transform: translateY(-5px) scale(1.15);
+      }
+
+      .yt-time {
+        min-width: 80px;
+        text-align: right;
+        font-size: 12px;
+        color: #ddd;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .speed-control-wrapper {
+        position: relative;
+        display: inline-block;
+      }
+
+      .speed-menu {
+        position: absolute;
+        bottom: 48px;
+        right: 0;
+        background: #181818;
+        border-radius: 8px;
+        padding: 6px 0;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        min-width: 90px;
+        z-index: 1000;
+      }
+
+      .speed-option {
+        color: white;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 13px;
+        text-align: center;
+      }
+
+      .speed-option:hover {
+        background: #282828;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      #chat-messages {
+        overflow-y: auto;
+        height: 100%;
+      }
+
+      #download-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .chat-emoji {
+        width: 20px;
+        height: 20px;
+        vertical-align: middle;
+      }
+
+      /* ===== コメント内のリンク ===== */
+      .comment-text a.desc-link,
+      .comment-text a.timestamp-link {
+        color: #8ab4ff; /* YouTubeっぽい青 */
+        text-decoration: none;
+      }
+
+      .comment-text a.desc-link:hover,
+      .comment-text a.timestamp-link:hover {
+        text-decoration: underline;
+      }
+
+      .comment-replies {
+        /* margin-left: 46px; */
+        margin-top: 8px;
+        position: relative;
+        /* padding-left: 20px; */
+      }
+
+      .comment-reply {
+        margin-bottom: 8px;
+        display: flex;
+        gap: 10px;
+        position: relative;
+      }
+
+      .comment-replies.collapsed {
+        display: none;
+      }
+
+      .comment-toggle {
+        background: transparent;
+        border: none;
+        color: #8ab4ff;
+        font-size: 14px; /* 少し大きく */
+        padding: 6px 8px; /* ヒットエリア広げる */
+        cursor: pointer;
+        margin-left: 0; /* 左寄せ */
+        margin-top: 6px;
+        display: flex;
+        font-weight: 500;
+        align-self: flex-start; /* Flexアイテムとして左寄せ */
+        border-radius: 18px;
+        position: relative;
+      }
+
+      .comment-toggle:hover {
+        background: rgba(62, 166, 255, 0.2); /* YouTube風のホバー背景 */
+        border-radius: 18px;
+        text-decoration: none; /* 下線なし */
+      }
+
+      .thread-hitbox {
+        pointer-events: auto;
+        cursor: pointer;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 36px;
+        height: 100%;
+      }
+
+
+      /* ===== YouTube風：チャンネル行 ===== */
+      .channel-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+        margin-bottom: 10px;
+      }
+
+      .channel-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #222;
+      }
+
+      .channel-text {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+      .channel-name {
+        color: #fff;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+      }
+
+      .channel-name:hover {
+        text-decoration: underline;
+      }
+
+      .channel-meta {
+          font-size: 12px;
+          color: #aaa;
+        }
+
+      .channel-meta .dot {
+          margin: 0 6px;
+        }
+
+      /* アイコンをクリック可能に見せる */
+      #channel-avatar-link {
+        display: inline-block;
+        border-radius: 50%;
+      }
+
+      #channel-avatar-link:hover {
+        opacity: 0.85;
+      }
+
+      html:fullscreen #page-player .player-main,
+      html:-webkit-full-screen #page-player .player-main {
+        padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+      }
+
+      @media (max-width: 960px) {
+        header {
+          height: auto;
+          min-height: 56px;
+          padding: 8px 10px;
+        }
+
+        .header-inner {
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+
+        .logo-text {
+          display: none;
+        }
+
+        .header-search-wrap {
+          order: 2;
+          flex: 1 1 100%;
+          max-width: none;
+        }
+
+        .header-filter-btn,
+        .header-sort-btn {
+          min-height: 34px;
+          padding: 0 10px;
+        }
+
+        .header-buttons {
+          order: 1;
+          margin-left: auto;
+          transform: none;
+          gap: 8px;
+        }
+
+        .header-connection-status {
+          order: 3;
+          max-width: 100%;
+          width: 100%;
+          border-radius: 10px;
+          white-space: normal;
+        }
+
+        main {
+          margin-top: 98px;
+        }
+
+        .card {
+          padding: 14px;
+        }
+
+        .card-layout {
+          flex-direction: column;
+        }
+
+        .player-layout {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+
+        .player-main {
+          padding: 8px 0 0;
+        }
+
+        .player-sidebar {
+          min-width: 0;
+          width: 100%;
+          padding: 0;
+          overflow: visible;
+        }
+
+        #chat-section {
+          max-height: min(48vh, 420px);
+          overflow: hidden;
+        }
+
+        #chat-section .sidebar-content,
+        #live-chat-container {
+          max-height: 100%;
+          overflow-y: auto;
+        }
+
+        #chat-messages {
+          max-height: none;
+          overflow-y: auto;
+        }
+
+        .settings-stack-wide,
+        .settings-stack-tool {
+          min-width: 0;
+          max-width: 100%;
+          width: 100%;
+          margin-left: 0;
+        }
+
+        .settings-actions-right,
+        .settings-inline-right {
+          text-align: left;
+          justify-content: flex-start;
+        }
+
+        .home-filter-panel,
+        .home-sort-panel {
+          width: min(96vw, 420px);
+          right: 0;
+          left: auto;
+        }
+      }
+
+      @media (max-width: 768px) {
+        header {
+          height: 0;
+          min-height: 0;
+          padding: 0;
+          background: transparent;
+          border: 0;
+        }
+
+        .header-inner {
+          display: block;
+          height: 0;
+          gap: 0;
+        }
+
+        .logo,
+        .header-connection-status {
+          display: none !important;
+        }
+
+        .header-search-wrap {
+          position: fixed;
+          top: 8px;
+          left: 10px;
+          right: 10px;
+          z-index: 1200;
+          max-width: none;
+          width: auto;
+          height: 44px;
+          padding: 0 10px;
+          gap: 6px;
+          border-radius: 14px;
+        }
+
+        .header-search-wrap i {
+          display: none;
+        }
+
+        .header-search {
+          font-size: 15px;
+        }
+
+        .header-filter-btn,
+        .header-sort-btn {
+          min-height: 34px;
+          height: 34px;
+          min-width: 60px;
+          padding: 0 10px;
+          font-size: 12px;
+        }
+
+        .home-filter-panel,
+        .home-sort-panel {
+          position: fixed;
+          top: 56px;
+          left: 10px;
+          right: 10px;
+          width: auto;
+          max-width: none;
+        }
+
+        .header-buttons {
+          position: fixed;
+          left: 50%;
+          bottom: 10px;
+          transform: translateX(-50%);
+          z-index: 1200;
+          gap: 10px;
+          padding: 8px 10px;
+          border-radius: 14px;
+          background: rgba(0, 0, 0, 0.55);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        body.mobile-bottom-ui-hidden .header-buttons {
+          transform: translate(-50%, calc(100% + 24px));
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .icon-btn {
+          width: 42px;
+          height: 42px;
+          font-size: 17px;
+          border-radius: 10px;
+        }
+
+        .fullscreen-toggle-btn {
+          display: flex;
+          width: 42px;
+          height: 42px;
+          font-size: 17px;
+          border-radius: 10px;
+        }
+
+        main {
+          margin-top: 8px;
+          margin-bottom: 86px;
+        }
+
+        .home-video-grid {
+          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          gap: 12px;
+          padding: 10px;
+        }
+
+        #page-home {
+          padding-top: 56px;
+        }
+
+        .playlist-page {
+          padding-top: 56px;
+        }
+
+        .local-video-item {
+          grid-template-columns: 120px 1fr auto;
+          gap: 8px;
+          padding: 6px;
+        }
+
+        .local-video-thumb {
+          width: 120px;
+          height: 68px;
+        }
+
+        .url-row,
+        .field-row,
+        .url-box {
+          flex-wrap: wrap;
+        }
+
+        .field-label {
+          width: 100%;
+        }
+
+        .field-row select,
+        .field-row input,
+        .url-box textarea,
+        .url-box input {
+          width: 100%;
+        }
+
+        .download-toggle-group {
+          flex-direction: column;
+        }
+
+        .download-inline-toggle {
+          justify-content: space-between;
+          width: 100%;
+        }
+
+        .url-box button,
+        #download-btn {
+          width: 100%;
+          height: 44px;
+          border-radius: 10px;
+        }
+
+        .toggle {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 10px;
+          padding: 10px;
+        }
+
+        .settings-inline-row {
+          flex-wrap: wrap;
+        }
+
+        .options {
+          gap: 10px;
+          margin-top: 12px;
+        }
+
+        .card {
+          padding: 12px;
+        }
+
+        .field-row {
+          gap: 8px;
+        }
+
+        .home-filter-inline {
+          flex-wrap: wrap;
+        }
+
+        .home-filter-ymd {
+          width: 100%;
+        }
+
+        .yt-controls {
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: flex-start;
+          gap: 8px;
+          padding: 8px 8px 10px;
+        }
+
+        .yt-btn {
+          width: 36px;
+          height: 36px;
+          font-size: 14px;
+        }
+
+        .yt-time {
+          min-width: 64px;
+          font-size: 11px;
+        }
+
+        #volume-bar {
+          width: 56px;
+        }
+
+        #page-player {
+          padding-top: 0;
+          margin-top: 0;
+        }
+
+        #page-player .player-main {
+          padding-top: 0;
+        }
+
+        /* スマホのみ: シークバーを最上段へ */
+        #seek-bar {
+          order: -1;
+          flex: 1 1 100%;
+          width: 100%;
+          margin: 0 0 4px;
+          transform: translateY(0);
+        }
+
+        /* 音量までは左寄せ、以降（時間/速度/全画面）は右寄せ */
+        .yt-controls .yt-volume {
+          margin-right: auto;
+        }
+
+        .comment-item,
+        .comment-reply {
+          padding: 8px 4px;
+          gap: 8px;
+        }
+
+        .comment-actions {
+          gap: 2px;
+          flex-wrap: wrap;
+        }
+
+        .filter-menu {
+          left: auto;
+          right: 0;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .header-search-wrap {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          flex-wrap: nowrap;
+          align-items: center;
+          height: 44px;
+          min-height: 44px;
+          padding: 0 8px;
+          gap: 6px;
+        }
+
+        .header-search {
+          flex: 1;
+          min-width: 0;
+          height: auto;
+        }
+
+        .header-filter-container {
+          flex-shrink: 0;
+        }
+
+        .header-sort-container {
+          flex-shrink: 0;
+        }
+
+        .header-filter-btn,
+        .header-sort-btn {
+          width: auto;
+          min-width: 56px;
+          min-height: 34px;
+          height: 34px;
+          font-size: 12px;
+        }
+
+        .home-filter-panel,
+        .home-sort-panel {
+          top: 56px;
+        }
+
+        .icon-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 16px;
+          border-radius: 9px;
+        }
+
+        .fullscreen-toggle-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 16px;
+          border-radius: 9px;
+        }
+
+        main {
+          margin-top: 8px;
+          margin-bottom: 84px;
+        }
+
+        .home-video-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .playlist-page-grid {
+          gap: 14px;
+        }
+
+        .playlist-page-section-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .playlist-page-card {
+          min-width: 280px;
+          max-width: 280px;
+        }
+
+        .playlist-page-channel-card {
+          width: 136px;
+          min-width: 136px;
+        }
+
+        .playlist-page-channel-avatar {
+          width: 88px;
+          height: 88px;
+        }
+
+        .playlist-page-detail-layout {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+
+        .playlist-page-detail-side {
+          position: static;
+        }
+
+        .playlist-page-title {
+          font-size: 28px;
+          margin-bottom: 10px;
+        }
+
+        .playlist-page-section-title {
+          font-size: 24px;
+        }
+
+        .playlist-page-video-row {
+          grid-template-columns: 120px 1fr;
+          gap: 8px;
+          padding: 6px;
+        }
+
+        .playlist-page-video-title {
+          font-size: 14px;
+        }
+
+        .playlist-page-channel-hero-body {
+          grid-template-columns: 88px 1fr;
+          gap: 12px;
+          padding: 12px;
+        }
+
+        .playlist-page-channel-hero-avatar {
+          width: 88px;
+          height: 88px;
+        }
+
+        .playlist-page-channel-hero-title {
+          font-size: 22px;
+        }
+
+        .playlist-page-channel-video-grid {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+
+        .comment-header-row {
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .comment-count-label {
+          font-size: 17px;
+        }
+
+        .sort-btn {
+          font-size: 13px;
+          padding: 6px;
+        }
+
+        .yt-info {
+          padding: 10px 8px 12px;
+        }
+
+        .video-header-row {
+          align-items: flex-start;
+          gap: 8px;
+        }
+
+        .channel-row {
+          gap: 8px;
+        }
+
+        .options {
+          gap: 8px;
+          margin-top: 10px;
+        }
+
+        .toggle {
+          padding: 8px;
+          gap: 8px;
+        }
+
+        .settings-inline-row .btn-ui {
+          min-height: 36px;
+        }
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  </head>
+  <!-- iOS用 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <!-- Android用 -->
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <body>
+    <header>
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-icon"></span>
+          <span class="logo-text">LocalTube</span>
+        </div>
+        <div class="header-search-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            id="home-search-input"
+            class="header-search"
+            type="search"
+            placeholder="検索（全0件）"
+            autocomplete="off" />
+          <div class="header-filter-container">
+            <button id="home-filter-btn" class="header-filter-btn"
+              type="button">
+              フィルタ
+            </button>
+            <div id="home-filter-panel" class="home-filter-panel hidden">
+              <div class="home-filter-row">
+                <div class="home-filter-label">アップロード日</div>
+                <div class="home-filter-inline">
+                  <input id="filter-date-from" type="date" />
+                  <input
+                    id="filter-date-from-text"
+                    class="home-filter-ymd"
+                    type="text"
+                    placeholder="YYYYMMDD" />
+                  <span>～</span>
+                  <input id="filter-date-to" type="date" />
+                  <input
+                    id="filter-date-to-text"
+                    class="home-filter-ymd"
+                    type="text"
+                    placeholder="YYYYMMDD" />
+                </div>
+              </div>
+              <div class="home-filter-row">
+                <div class="home-filter-label">動画時間</div>
+                <div class="home-filter-inline">
+                  <select id="filter-duration-range">
+                    <option value="all">指定なし</option>
+                    <option value="lt3">3分未満</option>
+                    <option value="3to20">3〜20分</option>
+                    <option value="ge20">20分以上</option>
+                    <option value="custom">カスタム</option>
+                  </select>
+                  <input
+                    id="filter-duration-min"
+                    type="text"
+                    placeholder="カスタム最小(秒/MM:SS)" />
+                  <span>～</span>
+                  <input
+                    id="filter-duration-max"
+                    type="text"
+                    placeholder="カスタム最大(秒/MM:SS)" />
+                </div>
+              </div>
+              <div class="home-filter-row">
+                <div class="home-filter-label">チャンネル</div>
+                <div class="home-filter-inline">
+                  <input
+                    id="filter-channel"
+                    type="text"
+                    placeholder="チャンネル名で絞り込み" />
+                </div>
+              </div>
+              <div class="home-filter-row">
+                <div class="home-filter-label">ファイルパス</div>
+                <div class="home-filter-inline">
+                  <input
+                    id="filter-filepath"
+                    type="text"
+                    placeholder="ファイルパスで絞り込み" />
+                </div>
+              </div>
+              <div class="home-filter-actions">
+                <button
+                  id="filter-clear-btn"
+                  class="home-filter-clear-btn"
+                  type="button">
+                  クリア
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="header-sort-container">
+            <button id="home-sort-btn" class="header-sort-btn"
+              type="button">
+              並べ替え
+            </button>
+            <div id="home-sort-panel" class="home-sort-panel hidden">
+              <div class="home-sort-row">
+                <div class="home-sort-label">種類</div>
+                <div class="home-sort-inline">
+                  <button class="home-sort-key-btn" data-sort-key="popular"
+                    type="button">
+                    人気順
+                  </button>
+                  <button class="home-sort-key-btn" data-sort-key="kana"
+                    type="button">
+                    50音順
+                  </button>
+                  <button class="home-sort-key-btn active"
+                    data-sort-key="published" type="button">
+                    投稿日
+                  </button>
+                </div>
+              </div>
+              <div class="home-sort-row">
+                <div class="home-sort-label">順序</div>
+                <div class="home-sort-inline">
+                  <button class="home-sort-order-btn" data-sort-order="asc"
+                    type="button">
+                    昇順
+                  </button>
+                  <button class="home-sort-order-btn active"
+                    data-sort-order="desc" type="button">
+                    降順
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="header-connection-status" class="header-connection-status"
+          role="status" aria-live="polite">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span id="header-connection-status-text"></span>
+        </div>
+        <div class="header-buttons">
+          <button
+            class="icon-btn active"
+            id="btn-home"
+            data-page="page-home"
+            title="ホーム">
+            <i class="fa-solid fa-home"></i>
+          </button>
+          <button
+            class="icon-btn"
+            id="btn-player"
+            data-page="page-player"
+            title="プレイヤー">
+            <i class="fa-solid fa-play"></i>
+          </button>
+          <button
+            class="icon-btn"
+            id="btn-playlists"
+            data-page="page-playlists"
+            title="再生リスト">
+            <i class="fa-solid fa-list"></i>
+          </button>
+          <button
+            class="icon-btn active"
+            id="btn-downloader"
+            data-page="page-downloader"
+            title="ダウンローダー">
+            <i class="fa-solid fa-download"></i>
+          </button>
+          <button
+            class="icon-btn"
+            id="btn-settings"
+            data-page="page-settings"
+            title="設定">
+            <i class="fa-solid fa-gear"></i>
+          </button>
+          <button
+            class="fullscreen-toggle-btn"
+            id="btn-mobile-fullscreen"
+            title="全画面表示"
+            aria-label="全画面表示"
+            aria-pressed="false"
+            type="button">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- ===== ページ切り替え用コンテナ ===== -->
+      <div id="page-home" class="page active-page">
+        <div class="home-video-grid">
+
+        </div>
+      </div>
+
+      <div id="page-playlists" class="page">
+        <div class="playlist-page">
+          <div id="playlist-page-grid" class="playlist-page-grid"></div>
+        </div>
+      </div>
+
+      <div id="page-player" class="page">
+        <div class="player-layout">
+          <!-- ===== 左：メインプレイヤー ===== -->
+          <div class="player-main">
+            <div class="player-video-wrap" id="player-container">
+              <video id="local-player"></video>
+              <div class="yt-controls">
+                <button id="btn-play" class="yt-btn">
+                  <i class="fa-solid fa-play"></i>
+                </button>
+
+                <!-- ±5秒ボタン -->
+                <button
+                  id="btn-rew5"
+                  class="yt-btn yt-skip"
+                  data-tooltip="-5秒">
+                  <i class="fa-solid fa-backward-step"></i>
+                </button>
+
+                <!-- +5秒ボタン -->
+                <button
+                  id="btn-fwd5"
+                  class="yt-btn yt-skip"
+                  data-tooltip="+5秒">
+                  <i class="fa-solid fa-forward-step"></i>
+                </button>
+
+                <!-- 音量バー -->
+                <div class="yt-volume yt-volume-hover">
+                  <i class="fa-solid fa-volume-high"></i>
+                  <input
+                    type="range"
+                    id="volume-bar"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value="1" />
+                </div>
+
+                <input type="range" id="seek-bar" min="0" max="100" value="0" />
+
+                <span id="time-display" class="yt-time">00:00 / 00:00</span>
+
+                <!-- 再生速度 -->
+                <div class="speed-control-wrapper">
+                  <button id="btn-speed" class="yt-btn" title="再生速度">
+                    1.0×
+                  </button>
+
+                  <div id="speed-menu" class="speed-menu hidden">
+                    <div class="speed-option" data-speed="0.25">0.25×</div>
+                    <div class="speed-option" data-speed="0.5">0.5×</div>
+                    <div class="speed-option" data-speed="0.75">0.75×</div>
+                    <div class="speed-option" data-speed="1.0">1.0×</div>
+                    <div class="speed-option" data-speed="1.25">1.25×</div>
+                    <div class="speed-option" data-speed="1.5">1.5×</div>
+                    <div class="speed-option" data-speed="1.75">1.75×</div>
+                    <div class="speed-option" data-speed="2.0">2.0×</div>
+                    <div class="speed-option" data-speed="3.0">3.0×</div>
+                    <div class="speed-option" data-speed="4.0">4.0×</div>
+                  </div>
+                </div>
+
+                <button id="btn-pip" class="yt-btn" title="ピクチャーインピクチャ">
+                  <i class="fa-regular fa-clone"></i>
+                </button>
+
+                <button id="btn-full" class="yt-btn">
+                  <i class="fa-solid fa-expand"></i>
+                </button>
+              </div>
+            </div>
+            <div class="yt-info">
+              <div class="video-header-row">
+                <div id="player-title" class="yt-title">
+                  動画を選択してください
+                </div>
+                <a
+                  id="youtube-link-btn"
+                  href="#"
+                  target="_blank"
+                  class="yt-btn youtube-link-btn"
+                  title="YouTubeで見る">
+                  <i class="fa-brands fa-youtube youtube-link-icon"></i>
+                </a>
+              </div>
+
+              <div id="channel-info" class="channel-row">
+                <a id="channel-avatar-link" href="#" target="_blank">
+                  <img
+                    id="channel-avatar"
+                    class="channel-avatar"
+                    src
+                    alt />
+                </a>
+                <div class="channel-text">
+                  <a
+                    id="channel-link"
+                    href="#"
+                    target="_blank"
+                    class="channel-name"></a>
+                  <div class="channel-meta">
+                    <span id="channel-handle"></span>
+                    <span class="dot">•</span>
+                    <span id="channel-subs"></span>
+                  </div>
+                </div>
+                <!-- 動画統計情報（右寄せ） -->
+                <div class="video-stats">
+                  <div title="高評価数">
+                    <i class="fa-regular fa-thumbs-up"></i>
+                    <span id="stat-likes"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="video-description" class="yt-description">
+                概要欄はここに表示されます
+              </div>
+
+              <div id="comment-section" class="comment-section">
+                <div class="sidebar-header">
+                  <div class="comment-header-row">
+                    <div class="comment-count-label">
+                      <span id="comment-count-display"></span> 件のコメント
+                    </div>
+                    <div class="comment-controls">
+                      <div class="sort-container">
+                        <button id="sort-toggle" class="sort-btn">
+                          <i class="fa-solid fa-arrow-down-short-wide"></i>
+                          並び替え
+                        </button>
+                        <div id="sort-menu" class="sort-menu hidden">
+                          <div class="sort-item" data-sort="popular">人気順</div>
+                          <div class="sort-item active" data-sort="newest">
+                            新しい順
+                          </div>
+                          <div class="sort-item" data-sort="oldest">古い順</div>
+                        </div>
+                      </div>
+                      <div class="filter-container">
+                        <button id="filter-toggle" class="filter-btn">
+                          <i class="fa-solid fa-filter"></i>
+                          絞り込み
+                        </button>
+                        <div id="filter-menu" class="filter-menu hidden">
+                          <div class="filter-item" data-filter="timestamp">
+                            タイムスタンプ付き
+                          </div>
+                          <div class="filter-item" data-filter="with-replies">
+                            リプライ付き
+                          </div>
+                          <div class="filter-item" data-filter="favorited">
+                            投稿者のハート付き
+                          </div>
+                          <div class="filter-item" data-filter="pinned">
+                            ピン留め
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button class="sidebar-toggle" data-target="comment-section">
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </button>
+                </div>
+                <div class="sidebar-content comment-content">
+                  <div class="comment-empty">
+                    コメントはありません
+                  </div>
+
+                  <div id="comment-list" class="comment-list"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== 右：ローカル動画一覧 ===== -->
+          <div class="player-sidebar" id="player-sidebar">
+            <!-- ===== ライブチャット（新規） ===== -->
+            <div class="sidebar-live_chat" id="chat-section">
+              <div class="sidebar-header">
+                <div class="sidebar-title">ライブチャット</div>
+                <button class="sidebar-toggle" data-target="chat-section">
+                  <i class="fa-solid fa-chevron-down"></i>
+                </button>
+              </div>
+              <div
+                class="sidebar-content chat-content"
+                id="live-chat-container">
+                <div id="chat-messages"></div>
+                <div class="chat-empty">チャットを選択してください</div>
+              </div>
+            </div>
+
+            <div class="sidebar-local_movie" id="playback-playlist-section"
+              style="display:none;">
+              <div class="sidebar-header">
+                <div class="sidebar-title"
+                  id="playback-playlist-title">プレイリスト</div>
+                <button class="sidebar-toggle"
+                  data-target="playback-playlist-section">
+                  <i class="fa-solid fa-chevron-down"></i>
+                </button>
+              </div>
+              <div id="playback-playlist-items" class="sidebar-content"></div>
+            </div>
+
+            <!-- ===== ローカル動画（既存） ===== -->
+            <div class="sidebar-local_movie" id="video-section">
+              <div class="sidebar-header">
+                <div class="sidebar-title">ローカル動画</div>
+                <button class="sidebar-toggle" data-target="video-section">
+                  <i class="fa-solid fa-chevron-down"></i>
+                </button>
+              </div>
+              <div id="local-video-list" class="sidebar-content"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-downloader" class="page active-page">
+        <div class="card card-layout">
+          <div class="card-main">
+            <div class="url-row">
+              <div class="field-label">URL</div>
+              <div class="url-box">
+                <textarea
+                  id="urls"
+                  placeholder="YouTube や ABEMA の URL を入力"></textarea>
+                <button id="download-btn" onclick="start()">
+                  ダウンロード
+                </button>
+              </div>
+            </div>
+            <!-- <div id="download-estimate-status"
+              class="download-estimate-status"
+              aria-live="polite"></div> -->
+            <div class="options">
+              <div class="field-row">
+                <div class="field-label">画質</div>
+                <select id="fmt">
+                  <option
+                    value="bv[height=4320][ext=mp4]+ba[ext=webm]/bv[height=2160][ext=mp4]+ba[ext=webm]/bv[height=1440][ext=mp4]+ba[ext=webm]/bv[height=1080][ext=mp4]+ba[ext=webm]/bv[height=720][ext=mp4]+ba[ext=webm]/bv[height=480][ext=mp4]+ba[ext=webm]/bv[height=360][ext=mp4]+ba[ext=webm]/bv[height=240][ext=mp4]+ba[ext=webm]/bv[height=144][ext=mp4]+ba[ext=webm]">
+                    4320p（7680 x 4320）
+                  </option>
+                  <option
+                    value="bv[height=2160][ext=mp4]+ba[ext=webm]/bv[height=1440][ext=mp4]+ba[ext=webm]/bv[height=1080][ext=mp4]+ba[ext=webm]/bv[height=720][ext=mp4]+ba[ext=webm]/bv[height=480][ext=mp4]+ba[ext=webm]/bv[height=360][ext=mp4]+ba[ext=webm]/bv[height=240][ext=mp4]+ba[ext=webm]/bv[height=144][ext=mp4]+ba[ext=webm]">
+                    2160p（3840 x 2160）
+                  </option>
+                  <option
+                    value="bv[height=1440][ext=mp4]+ba[ext=webm]/bv[height=1080][ext=mp4]+ba[ext=webm]/bv[height=720][ext=mp4]+ba[ext=webm]/bv[height=480][ext=mp4]+ba[ext=webm]/bv[height=360][ext=mp4]+ba[ext=webm]/bv[height=240][ext=mp4]+ba[ext=webm]/bv[height=144][ext=mp4]+ba[ext=webm]">
+                    1440p（2560 x 1440）
+                  </option>
+                  <option
+                    value="bv[height=1080][ext=mp4]+ba[ext=webm]/bv[height=720][ext=mp4]+ba[ext=webm]/bv[height=480][ext=mp4]+ba[ext=webm]/bv[height=360][ext=mp4]+ba[ext=webm]/bv[height=240][ext=mp4]+ba[ext=webm]/bv[height=144][ext=mp4]+ba[ext=webm]">
+                    1080p（1920 x 1080）
+                  </option>
+                  <option
+                    value="bv[height=720][ext=mp4]+ba[ext=webm]/bv[height=480][ext=mp4]+ba[ext=webm]/bv[height=360][ext=mp4]+ba[ext=webm]/bv[height=240][ext=mp4]+ba[ext=webm]/bv[height=144][ext=mp4]+ba[ext=webm]">
+                    720p （1280 x 720 ）
+                  </option>
+                  <option
+                    value="bv[height=480][ext=mp4]+ba[ext=webm]/bv[height=360][ext=mp4]+ba[ext=webm]/bv[height=240][ext=mp4]+ba[ext=webm]/bv[height=144][ext=mp4]+ba[ext=webm]">
+                    480p （720 x 480 ）
+                  </option>
+                  <option
+                    value="bv[height=360][ext=mp4]+ba[ext=webm]/bv[height=240][ext=mp4]+ba[ext=webm]/bv[height=144][ext=mp4]+ba[ext=webm]">
+                    360p （640 x 360 ）
+                  </option>
+                  <option
+                    value="bv[height=240][ext=mp4]+ba[ext=webm]/bv[height=144][ext=mp4]+ba[ext=webm]">
+                    240p （ 426 x 240 ）
+                  </option>
+                  <option value="bv[height=144][ext=mp4]+ba[ext=webm]">
+                    144p （256 x 144 ）
+                  </option>
+                </select>
+              </div>
+              <div class="field-row field-row-download-toggles">
+                <div class="field-label">DL</div>
+                <div class="download-toggle-group">
+
+                  <label class="download-inline-toggle">
+                    <span>コメント</span>
+                    <span class="switch">
+                      <input type="checkbox" id="optDownloadComments" checked />
+                      <span class="slider"></span>
+                    </span>
+                  </label>
+                  <label class="download-inline-toggle">
+                    <span>チャット</span>
+                    <span class="switch">
+                      <input type="checkbox" id="optDownloadChat" checked />
+                      <span class="slider"></span>
+                    </span>
+                  </label>
+                  <label class="download-inline-toggle">
+                    <span>サムネイル</span>
+                    <span class="switch">
+                      <input type="checkbox" id="optThumb" checked />
+                      <span class="slider"></span>
+                    </span>
+                  </label>
+                  <label class="download-inline-toggle">
+                    <span>動画</span>
+                    <span class="switch">
+                      <input type="checkbox" id="optDownloadVideo" checked />
+                      <span class="slider"></span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">保存</div>
+                <div class="url-box">
+                  <input
+                    type="text"
+                    id="savePath"
+                    placeholder="保存先フォルダパス (空白の場合はデフォルト)" />
+                </div>
+              </div>
+
+              <div class="toggle">
+                <div>
+                  Cookieファイル
+                  <small id="cookie-status-display">設定されていません</small>
+                </div>
+                <div class="settings-inline-row">
+                  <button
+                    id="set-firefox-btn"
+                    class="btn-ui btn-dark btn-tight">
+                    FireFox
+                  </button>
+                  <input
+                    type="file"
+                    id="cookiePathSet"
+                    accept=".txt"
+                    class="settings-hidden-input" />
+                  <button
+                    id="manual-select-btn"
+                    class="btn-ui btn-dark btn-tight">
+                    手動選択
+                  </button>
+                  <button
+                    id="none-select-btn"
+                    class="btn-ui btn-dark btn-narrow">
+                    使用しない
+                  </button>
+                </div>
+              </div>
+
+              <div class="toggle">
+                <div>
+                  同時ダウンロード数:
+                  <span id="parallelDownloadsValue">10</span>
+                  <small>動画を同時にダウンロードする最大数</small>
+                </div>
+                <input
+                  type="range"
+                  id="optParallelDownloads"
+                  min="1"
+                  max="999"
+                  value="3" />
+              </div>
+              <div class="toggle">
+                <div>
+                  フラグメントの並列ダウンロード数:
+                  <span id="concurrentFragmentsValue">4</span>
+                  <small>1つの動画をダウンロードする際の分割数</small>
+                </div>
+                <input
+                  type="range"
+                  id="optConcurrentFragments"
+                  min="1"
+                  max="16"
+                  value="4" />
+              </div>
+
+              <div class="toggle">
+                <div>
+                  ダウンロード履歴を保存
+                  <small>再度同じ動画がダウンロードされないようになります。</small>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="optHistory" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="toggle">
+                <div>
+                  動画へサムネイルを埋め込む
+                  <small>動画ファイルにサムネイルを埋め込みます。</small>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="optEmbedThumbnail" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <!-- <div class="toggle">
+                <div>
+                  メタデータを埋め込む
+                  <small>動画ファイルへタイトルなどのメタデータを埋め込みます。</small>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="optAddMetadata" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="toggle">
+                <div>
+                  再エンコードの実行
+                  <small>破損していないのに再生できない動画を修復します。</small>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="optRemuxVideo" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              -->
+              <div class="toggle">
+                <div>
+                  ダウンロード通信をID固定
+                  <small>非推奨（必要なときのみ使用してください。）フォーマットが利用できない場合に使用すると解決することがあります。</small>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="optStaticFormat" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="toggle">
+                <div>
+                  DRM 保護を回避
+                  <div class="warn">
+                    <small>非推奨（必要なときのみ使用してください。）詳しくは<a
+                        href="https://github.com/yt-dlp/yt-dlp/issues/12563">こちら</a>(英語)</small>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="optDrm" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div id="advanced-download-settings-section"
+                class="settings-collapsible-section collapsed">
+                <div class="sidebar-header">
+                  <div class="sidebar-title">高度な設定</div>
+                  <button class="sidebar-toggle"
+                    data-target="advanced-download-settings-section">
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+                <div class="sidebar-content">
+                  <div class="toggle">
+                    <div>
+                      IPv4 を強制
+                      <small>ダウンロード時に IPv4 を使用します。</small>
+                    </div>
+                    <label class="switch">
+                      <input type="checkbox" id="optForceIpv4" />
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                  <div class="toggle">
+                    <div>動画フォーマットを変更
+                      <small>必要に応じて変更してください。</small></div>
+                    <select id="videoFormat">
+                      <option value="auto">自動</option>
+                      <option value="av01">av01</option>
+                      <option value="vp9">vp9</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-side">
+            <h3>システム情報</h3>
+            <div class="info-item">
+              <div class="info-label">現在時刻</div>
+              <div id="info-clock" class="info-value">—</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">稼働時間</div>
+              <div id="info-uptime" class="info-value">—</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">ネットワーク</div>
+              <div id="info-network" class="info-value">—</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">レイテンシ</div>
+              <div id="info-latency" class="info-value">—</div>
+            </div>
+            <div class="info-panel">
+              <canvas id="networkChart" height="100"></canvas>
+            </div>
+            <h3>進捗状況</h3>
+            <div class="info-item">
+              <div class="info-label">合計</div>
+              <div id="info-total-count" class="info-value">0 件</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">完了</div>
+              <div id="info-completed-count" class="info-value">0 件</div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">実行中</div>
+              <div id="info-running-count" class="info-value">0 件</div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">エラー</div>
+              <div id="info-error-count" class="info-value">0 件</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">失敗URL</div>
+              <div class="info-value info-item-action">
+                <button id="open-failed-url-modal-btn"
+                  class="btn-ui btn-gray info-inline-btn"
+                  type="button"
+                  disabled>開く</button>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">完了率</div>
+              <div class="info-value info-value-wide">
+                <div class="completion-bar-container">
+                  <div id="completion-bar" class="completion-bar"></div>
+                </div>
+                <div id="completion-text" class="completion-text">0%</div>
+              </div>
+            </div>
+            <div id="download-estimate-list-section"
+              class="download-estimate-list-section hidden">
+              <div class="download-estimate-list-header">
+                <h3>予測サイズ</h3>
+                <button id="download-estimate-list-toggle"
+                  class="download-estimate-toggle"
+                  type="button">折りたたむ</button>
+              </div>
+              <div id="download-estimate-list-total"
+                class="download-estimate-list-total"></div>
+              <div id="download-estimate-list"
+                class="download-estimate-list"
+                aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
+        <div id="job-queue"></div>
+      </div>
+
+      <div id="page-settings" class="page">
+        <div class="card card-layout">
+          <div class="card-main">
+            <h2>ツール</h2>
+            <div class="options">
+              <div class="toggle">
+                <div>
+                  メン限のプレイリストURLを取得
+                  <small>チャンネルURLから自動的に再生リストURLを生成します。</small>
+                </div>
+                <div
+                  class="settings-stack settings-stack-8 settings-stack-wide">
+                  <input
+                    type="text"
+                    id="youtubeChannelUrlInput"
+                    placeholder="YoutubeチャンネルのURLを入力してください"
+                    class="settings-input-full" />
+                  <div
+                    id="channelUrlError"
+                    class="settings-error-text"></div>
+                  <div class="settings-inline-row settings-gap-8">
+                    <input
+                      type="text"
+                      id="youtubePlaylistUrlOutput"
+                      readonly
+                      placeholder="変換された再生リストURL"
+                      class="settings-input-flex" />
+                    <button
+                      id="copyPlaylistUrlBtn"
+                      class="btn-ui btn-gray btn-tight btn-copy"
+                      title="コピー"
+                      aria-label="コピー">
+                      <i class="fa-regular fa-copy"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="toggle">
+                <div>
+                  ローカルアドレスを確認
+                  <small>スマホ等からアクセスするときにこのURLを使用してください。</small>
+                  <small id="localLanIpStatus"
+                    class="settings-hint-blue">待機中...</small>
+                </div>
+                <div
+                  class="settings-stack settings-stack-8 settings-stack-wide">
+                  <div class="settings-inline-row settings-gap-8">
+                    <input
+                      type="text"
+                      id="localLanIpOutput"
+                      readonly
+                      placeholder="LAN内IPを表示"
+                      class="settings-input-flex" />
+                    <button id="refreshLocalLanIpBtn"
+                      class="btn-ui btn-gray btn-tight btn-copy"
+                      title="更新"
+                      aria-label="更新">
+                      <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                    <button
+                      id="copyLocalLanIpBtn"
+                      class="btn-ui btn-gray btn-tight btn-copy"
+                      title="コピー"
+                      aria-label="コピー">
+                      <i class="fa-regular fa-copy"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-layout card-margin-top-20">
+          <div class="card-main">
+            <h2>設定</h2>
+            <div class="options">
+              <div class="toggle">
+                <div>
+                  ダウンロード履歴を削除
+                  <small>再度同じ動画をダウンロードできるようになります。</small>
+                </div>
+                <button
+                  id="clearHistoryBtn"
+                  class="btn-ui btn-gray"
+                  title="履歴を削除"
+                  aria-label="履歴を削除">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+              <div class="toggle settings-toggle-top">
+                <div>
+                  ローカル動画フォルダー
+                  <small>ローカル動画として認識するフォルダーを設定します。改行してパスを入力してください。</small>
+                  <small>例: D:\Videos や E:\Archive\LocalTube</small>
+                  <small id="local-video-dirs-status"
+                    class="settings-hint-blue"></small>
+                </div>
+                <div
+                  class="settings-stack settings-stack-8 settings-stack-wide">
+                  <textarea
+                    id="local-video-dirs-input"
+                    placeholder="追加したいフォルダを1行ずつ入力"
+                    class="settings-textarea-lg"></textarea>
+                  <div class="settings-actions-right">
+                    <button
+                      id="save-local-video-dirs-btn"
+                      class="btn-ui btn-blue">
+                      フォルダー設定を保存
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="toggle settings-toggle-top">
+                <div>
+                  壁紙
+                  <small>参照した画像を `public/wallpaper.拡張子` として保存します。</small>
+                  <small id="wallpaper-status"
+                    class="settings-hint-blue"></small>
+                </div>
+                <div
+                  class="settings-stack settings-stack-10 settings-stack-wide">
+                  <div
+                    class="settings-inline-row settings-gap-8 settings-inline-right">
+                    <input
+                      type="file"
+                      id="wallpaper-file-input"
+                      accept="image/*"
+                      class="settings-hidden-input" />
+                    <button
+                      id="wallpaper-select-btn"
+                      class="btn-ui btn-blue"
+                      title="壁紙を選択"
+                      aria-label="壁紙を選択">
+                      <i class="fa-regular fa-folder-open"></i>
+                    </button>
+                    <button
+                      id="wallpaper-clear-btn"
+                      class="btn-ui btn-gray"
+                      title="壁紙をクリア"
+                      aria-label="壁紙をクリア">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <div class="settings-inline-row settings-inline-right">
+                    <div class="wallpaper-label">画像のぼかし</div>
+                    <input
+                      type="range"
+                      id="wallpaper-blur-range"
+                      min="0"
+                      max="30"
+                      value="0" />
+                    <span id="wallpaper-blur-value">0 px</span>
+                  </div>
+                  <div class="settings-inline-row settings-inline-right">
+                    <div class="wallpaper-label">画像の明るさ</div>
+                    <input
+                      type="range"
+                      id="wallpaper-brightness-range"
+                      min="30"
+                      max="200"
+                      value="100" />
+                    <span id="wallpaper-brightness-value">100 %</span>
+                  </div>
+                </div>
+              </div>
+              <div class="toggle">
+                <div>
+                  一時サムネイルの作成
+                  <small>サムネイルフォルダに該当のサムネが見つからないときに動画からffmpegを用いて仮のサムネイルを生成します。</small>
+                  <!-- <small id="fallback-thumb-status"
+                    class="settings-hint-blue"></small> -->
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="opt-fallback-thumbnails" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="toggle">
+                <div>
+                  ダウンロード前のサイズ表示
+                  <small>ダウンロード前に予測サイズを取得して表示します。</small>
+                  <!-- <small id="download-estimate-setting-status"
+                    class="settings-hint-blue"></small> -->
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="opt-download-estimates" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle">
+                <div>
+                  PC起動時の自動実行
+                  <small>システム起動時またはログオン時に、このアプリケーションを自動で起動するように設定します。</small>
+                  <small id="autostart-status"
+                    class="settings-hint-blue"></small>
+                </div>
+                <div
+                  class="settings-stack settings-stack-8 settings-stack-wide">
+                  <select id="opt-autostart-mode">
+                    <option value="disabled">無効</option>
+                    <option
+                      value="startup">システム起動時（ネットワークドライブや、firefoxのcookieにアクセスできません。）</option>
+                    <option value="logon">ログオン時（通常はこちら）</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="toggle settings-toggle-top">
+                <div>
+                  yt-dlpへのカスタムコマンド
+                  <small>yt-dlpに手動でオプションをつけたい場合はここに記入してください。</small>
+                  <small id="yt-dlp-custom-command-status"
+                    class="settings-hint-blue"></small>
+                </div>
+                <div
+                  class="settings-stack settings-stack-8 settings-stack-wide">
+                  <input
+                    type="text"
+                    id="yt-dlp-custom-command-input"
+                    placeholder="例: -u email -p password"
+                    class="settings-input-full" />
+                  <div class="settings-actions-right">
+                    <button
+                      id="save-yt-dlp-custom-command-btn"
+                      class="btn-ui btn-blue">
+                      保存
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="toggle">
+                <div>
+                  レポートの生成
+                  <small>デバック用のレポートを出力します。問い合わせる時にこちらを添付してください。</small>
+                  <small id="report-generate-status"
+                    class="settings-hint-blue"></small>
+                </div>
+                <div class="settings-inline-row settings-gap-8">
+                  <button id="generate-report-btn"
+                    class="btn-ui btn-blue">
+                    レポートの生成
+                  </button>
+                </div>
+              </div>
+
+              <div class="toggle">
+                <div>
+                  サーバー再起動
+                  <small>localhost:3000 を再起動します。クリック後に数秒通信が切断されます。</small>
+                  <small id="server-restart-status"
+                    class="settings-hint-blue"></small>
+                </div>
+                <div class="settings-inline-row settings-gap-8">
+                  <button id="btn-restart-server"
+                    class="btn-ui btn-red">
+                    更新して再起動
+                  </button>
+                  <button id="btn-restart-server-node"
+                    class="btn-ui btn-gray"
+                    title="再起動"
+                    aria-label="再起動">
+                    再起動
+                  </button>
+                  <button id="btn-shutdown-server"
+                    class="btn-ui btn-gray"
+                    title="強制終了"
+                    aria-label="強制終了">
+                    <i class="fa-solid fa-power-off"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-layout card-margin-top-20">
+          <div class="card-main">
+            <h2>info</h2>
+            <div class="options">
+              <div class="toggle">
+                <div>
+                  サポートサーバーはこちら
+                  <small>即抜けや、入ったり抜けたりして大丈夫です。</small>
+                </div>
+                <div
+                  class="settings-stack settings-stack-8 settings-stack-wide">
+                  <a href="https://discord.gg/hzvfKJ8TMw"
+                    target="_blank"
+                    rel="noopener noreferrer">https://discord.gg/hzvfKJ8TMw</a>
+                </div>
+              </div>
+              <div class="toggle">
+                <div>
+                  支援箱
+                  <small>ご支援いただける場合はこちらからお願いします。</small>
+                </div>
+                <div
+                  class="settings-stack settings-stack-8 settings-stack-wide">
+                  <a href="https://soari3114.booth.pm/items/7995288"
+                    target="_blank"
+                    rel="noopener noreferrer">https://soari3114.booth.pm/items/7995288</a>
+                </div>
+              </div>
+              <div class="toggle settings-toggle-top">
+                <div>
+                  更新情報
+                  <small>これまでの変更内容を確認できます。</small>
+                </div>
+                <div
+                  class="settings-stack settings-stack-8 settings-stack-wide">
+                  <details class="info-updates-details">
+                    <summary>更新履歴を表示</summary>
+                    <div class="info-updates-toolbar">
+                      <button
+                        type="button"
+                        class="info-updates-filter-btn active"
+                        data-update-filter="minor-only">
+                        メジャーバージョン
+                      </button>
+                      <button
+                        type="button"
+                        class="info-updates-filter-btn"
+                        data-update-filter="all">
+                        細かい調整
+                      </button>
+                    </div>
+                    <ul class="info-updates-list">
+                      <li class="info-updates-item" data-version="1.19.5">
+                        <span class="info-updates-date">2026/05/21</span>
+                        <span class="info-updates-version">v1.19.5</span>
+                        <span
+                          class="info-updates-content">nicovideo.jpの動画のライブチャットに対応</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.19.4">
+                        <span class="info-updates-date">2026/05/21</span>
+                        <span class="info-updates-version">v1.19.4</span>
+                        <span
+                          class="info-updates-content">nicovideo.jpの動画のダウンロードに対応</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.19.3">
+                        <span class="info-updates-date">2026/05/02</span>
+                        <span class="info-updates-version">v1.19.3</span>
+                        <span
+                          class="info-updates-content">ダウンロード見積をデフォルトでオフに</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.19.2">
+                        <span class="info-updates-date">2026/05/02</span>
+                        <span class="info-updates-version">v1.19.2</span>
+                        <span
+                          class="info-updates-content">動画リストの描画の改善</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.19.1">
+                        <span class="info-updates-date">2026/05/02</span>
+                        <span class="info-updates-version">v1.19.1</span>
+                        <span
+                          class="info-updates-content">サイズ見積時のcookie使用に関する修正</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.19.0">
+                        <span class="info-updates-date">2026/05/02</span>
+                        <span class="info-updates-version">v1.19.0</span>
+                        <span
+                          class="info-updates-content">高度な設定オプションの追加</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.18.0">
+                        <span class="info-updates-date">2026/05/01</span>
+                        <span class="info-updates-version">v1.18.0</span>
+                        <span
+                          class="info-updates-content">プレイリストページにチャンネル機能の追加</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.17.0">
+                        <span class="info-updates-date">2026/04/28</span>
+                        <span class="info-updates-version">v1.17.0</span>
+                        <span
+                          class="info-updates-content">全画面のUIをLocalTube依存のものに変更</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.16.2">
+                        <span class="info-updates-date">2026/04/28</span>
+                        <span class="info-updates-version">v1.16.2</span>
+                        <span
+                          class="info-updates-content">cookie選択について、firefoxのみ次回も設定を維持するように変更</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.16.1">
+                        <span class="info-updates-date">2026/04/28</span>
+                        <span class="info-updates-version">v1.16.1</span>
+                        <span
+                          class="info-updates-content">サイズ予測機能のエラー時のURLの羅列を改善</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.16.0">
+                        <span class="info-updates-date">2026/04/28</span>
+                        <span class="info-updates-version">v1.16.0</span>
+                        <span
+                          class="info-updates-content">エラーURLの書き出し機能の実装</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.15.1">
+                        <span class="info-updates-date">2026/04/28</span>
+                        <span class="info-updates-version">v1.15.1</span>
+                        <span
+                          class="info-updates-content">サイズ予測機能について、エラー時の処理を改善</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.15.0">
+                        <span class="info-updates-date">2026/04/27</span>
+                        <span class="info-updates-version">v1.15.0</span>
+                        <span
+                          class="info-updates-content">ダウンロードサイズ予測機能の実装</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.14.10">
+                        <span class="info-updates-date">2026/04/27</span>
+                        <span class="info-updates-version">v1.14.10</span>
+                        <span
+                          class="info-updates-content">自動起動についてシステム起動時とログオン時を選択できるように</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.14.9">
+                        <span class="info-updates-date">2026/04/27</span>
+                        <span class="info-updates-version">v1.14.9</span>
+                        <span
+                          class="info-updates-content">フォーマット出力機能の追加</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.14.8">
+                        <span class="info-updates-date">2026/04/23</span>
+                        <span class="info-updates-version">v1.14.8</span>
+                        <span
+                          class="info-updates-content">yt-dlp ENOENTの対策</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.14.7">
+                        <span class="info-updates-date">2026/04/21</span>
+                        <span class="info-updates-version">v1.14.7</span>
+                        <span
+                          class="info-updates-content">cookieタイムアウト対策、ライブ中動画のダウンロード切り替えの改善</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.14.6">
+                        <span class="info-updates-date">2026/04/20</span>
+                        <span class="info-updates-version">v1.14.6</span>
+                        <span
+                          class="info-updates-content">player画面でinfo.jsonを参照し動画を描画するように</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.14.5">
+                        <span class="info-updates-date">2026/04/20</span>
+                        <span class="info-updates-version">v1.14.5</span>
+                        <span
+                          class="info-updates-content">チャンネルアイコン取得周りの最適化</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.14.4">
+                        <span class="info-updates-date">2026/04/20</span>
+                        <span class="info-updates-version">v1.14.4</span>
+                        <span
+                          class="info-updates-content">プレイヤー画面での投稿者アイコン描画周りの処理を改善</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.14.3">
+                        <span class="info-updates-date">2026/04/20</span>
+                        <span class="info-updates-version">v1.14.3</span>
+                        <span
+                          class="info-updates-content">ホーム画面でinfo.jsonを参照し動画を描画するように</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.14.2">
+                        <span class="info-updates-date">2026/04/19</span>
+                        <span class="info-updates-version">v1.14.2</span>
+                        <span
+                          class="info-updates-content">レポート内容の微修正</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.14.1">
+                        <span class="info-updates-date">2026/04/17</span>
+                        <span class="info-updates-version">v1.14.1</span>
+                        <span
+                          class="info-updates-content">ABEMAの短縮URLに対応</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.14.0">
+                        <span class="info-updates-date">2026/04/12</span>
+                        <span class="info-updates-version">v1.14.0</span>
+                        <span
+                          class="info-updates-content">ローカル動画の削除機能を追加</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.13.0">
+                        <span class="info-updates-date">2026/04/11</span>
+                        <span class="info-updates-version">v1.13.0</span>
+                        <span
+                          class="info-updates-content">ライブ配信の追いかけのDLに対応（β）</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.12.5">
+                        <span class="info-updates-date">2026/04/11</span>
+                        <span class="info-updates-version">v1.12.5</span>
+                        <span
+                          class="info-updates-content">コンソールログと設定ページに検索フィルターを追加</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.12.4">
+                        <span class="info-updates-date">2026/04/11</span>
+                        <span class="info-updates-version">v1.12.4</span>
+                        <span
+                          class="info-updates-content">チャンネル情報取得時のタイムアウトを延長</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.12.3">
+                        <span class="info-updates-date">2026/04/10</span>
+                        <span class="info-updates-version">v1.12.3</span>
+                        <span
+                          class="info-updates-content">ID固定時のDLに音声が含まれない問題を修正</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.12.2">
+                        <span class="info-updates-date">2026/04/09</span>
+                        <span class="info-updates-version">v1.12.2</span>
+                        <span class="info-updates-content">エラーメッセージの調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.12.1">
+                        <span class="info-updates-date">2026/04/09</span>
+                        <span class="info-updates-version">v1.12.1</span>
+                        <span class="info-updates-content">UIの調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.12.0">
+                        <span class="info-updates-date">2026/04/09</span>
+                        <span class="info-updates-version">v1.12.0</span>
+                        <span
+                          class="info-updates-content">一部のフォーマットエラーへの対応</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.11.6">
+                        <span class="info-updates-date">2026/04/09</span>
+                        <span class="info-updates-version">v1.11.6</span>
+                        <span class="info-updates-content">絵文字の描画をローカル優先に</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.11.5">
+                        <span class="info-updates-date">2026/04/08</span>
+                        <span class="info-updates-version">v1.11.5</span>
+                        <span
+                          class="info-updates-content">絵文字を辞書から引用できるように</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.11.4">
+                        <span class="info-updates-date">2026/04/08</span>
+                        <span class="info-updates-version">v1.11.4</span>
+                        <span
+                          class="info-updates-content">コメントの絵文字がconfig.jsonの辞書型の参照できるように</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.11.3">
+                        <span class="info-updates-date">2026/04/08</span>
+                        <span class="info-updates-version">v1.11.3</span>
+                        <span
+                          class="info-updates-content">コメントのメンシ絵文字に対応</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.11.2">
+                        <span class="info-updates-date">2026/04/08</span>
+                        <span class="info-updates-version">v1.11.2</span>
+                        <span
+                          class="info-updates-content">期限切れの絵文字、メンバーバッチの対応</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.11.1">
+                        <span class="info-updates-date">2026/04/06</span>
+                        <span class="info-updates-version">v1.11.1</span>
+                        <span
+                          class="info-updates-content">フィードバックUIの微調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.11.0">
+                        <span class="info-updates-date">2026/04/06</span>
+                        <span class="info-updates-version">v1.11.0</span>
+                        <span
+                          class="info-updates-content">フィードバック、支援箱の設置</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.10.0">
+                        <span class="info-updates-date">2026/04/05</span>
+                        <span class="info-updates-version">v1.10.0</span>
+                        <span
+                          class="info-updates-content">更新履歴の表示機能を追加</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.9.0">
+                        <span class="info-updates-date">2026/04/05</span>
+                        <span class="info-updates-version">v1.9.0</span>
+                        <span
+                          class="info-updates-content">ライブチャット関連の軽量化</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.8.1">
+                        <span class="info-updates-date">2026/04/04</span>
+                        <span class="info-updates-version">v1.8.1</span>
+                        <span
+                          class="info-updates-content">レポート内容にPCスペックを追加</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.8.0">
+                        <span class="info-updates-date">2026/04/03</span>
+                        <span class="info-updates-version">v1.8.0</span>
+                        <span class="info-updates-content">レポート機能の追加</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.7.0">
+                        <span class="info-updates-date">2026/04/02</span>
+                        <span class="info-updates-version">v1.7.0</span>
+                        <span
+                          class="info-updates-content">yt-dlpへカスタムオプションの追加、インストーラーの処理の改善</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.6.4">
+                        <span class="info-updates-date">2026/04/01</span>
+                        <span class="info-updates-version">v1.6.4</span>
+                        <span
+                          class="info-updates-content">libopenh264.dllがインストール時に含まれるように</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.6.3">
+                        <span class="info-updates-date">2026/03/31</span>
+                        <span class="info-updates-version">v1.6.3</span>
+                        <span
+                          class="info-updates-content">ffmpegのインストールをwingetからgithubに変更</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.6.2">
+                        <span class="info-updates-date">2026/03/29</span>
+                        <span class="info-updates-version">v1.6.2</span>
+                        <span
+                          class="info-updates-content">メン限プレイリストURLの取得できる幅を強化</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.6.1">
+                        <span class="info-updates-date">2026/03/26</span>
+                        <span class="info-updates-version">v1.6.1</span>
+                        <span class="info-updates-content">yt-dlpのForbidden
+                          403等の対策を追加、DLオプションUIの改善</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.6.0">
+                        <span class="info-updates-date">2026/03/25</span>
+                        <span class="info-updates-version">v1.6.0</span>
+                        <span
+                          class="info-updates-content">yt-dlpがm3u8のみしか受け付けない際の対策、プレイリスト機能を追加</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.5.1">
+                        <span class="info-updates-date">2026/03/09</span>
+                        <span class="info-updates-version">v1.5.1</span>
+                        <span
+                          class="info-updates-content">サムネイルの結合を切り替えれるように</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.5.0">
+                        <span class="info-updates-date">2026/03/09</span>
+                        <span class="info-updates-version">v1.5.0</span>
+                        <span
+                          class="info-updates-content">サムネイルの結合を切り替えれるように</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.4.2">
+                        <span class="info-updates-date">2026/03/08</span>
+                        <span class="info-updates-version">v1.4.2</span>
+                        <span class="info-updates-content">設定UIの微調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.4.1">
+                        <span class="info-updates-date">2026/03/08</span>
+                        <span class="info-updates-version">v1.4.1</span>
+                        <span
+                          class="info-updates-content">起動.batに関する修正、READMEの更新</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.4.0">
+                        <span class="info-updates-date">2026/02/14</span>
+                        <span class="info-updates-version">v1.4.0</span>
+                        <span
+                          class="info-updates-content">タイムスタンプの実装、コメント絞り込み機能の実装</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.3.2">
+                        <span class="info-updates-date">2026/02/14</span>
+                        <span class="info-updates-version">v1.3.2</span>
+                        <span
+                          class="info-updates-content">スマホのホームページのUI調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.3.1">
+                        <span class="info-updates-date">2026/02/14</span>
+                        <span class="info-updates-version">v1.3.1</span>
+                        <span
+                          class="info-updates-content">スマホからのIPコピーを調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.3.0">
+                        <span class="info-updates-date">2026/02/14</span>
+                        <span class="info-updates-version">v1.3.0</span>
+                        <span
+                          class="info-updates-content">LAN内デバイスからアクセスするためのIPを表示</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.2.0">
+                        <span class="info-updates-date">2026/02/14</span>
+                        <span class="info-updates-version">v1.2.0</span>
+                        <span
+                          class="info-updates-content">PWAに対応し、スマホ版でのUIを実装</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.1.9">
+                        <span class="info-updates-date">2026/02/14</span>
+                        <span class="info-updates-version">v1.1.9</span>
+                        <span
+                          class="info-updates-content">概要欄のUIを調整、ダウンロード処理完了後の処理の調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.1.8">
+                        <span class="info-updates-date">2026/02/13</span>
+                        <span class="info-updates-version">v1.1.8</span>
+                        <span
+                          class="info-updates-content">gitテスト、ダウンロード処理の調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.1.7">
+                        <span class="info-updates-date">2026/02/13</span>
+                        <span class="info-updates-version">v1.1.7</span>
+                        <span class="info-updates-content">再起動処理の調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.1.6">
+                        <span class="info-updates-date">2026/02/13</span>
+                        <span class="info-updates-version">v1.1.6</span>
+                        <span class="info-updates-content">再起動処理の調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.1.5">
+                        <span class="info-updates-date">2026/02/13</span>
+                        <span class="info-updates-version">v1.1.5</span>
+                        <span class="info-updates-content">再起動処理の調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.1.4">
+                        <span class="info-updates-date">2026/02/13</span>
+                        <span class="info-updates-version">v1.1.4</span>
+                        <span class="info-updates-content">動画描画の最適化</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.1.3">
+                        <span class="info-updates-date">2026/02/13</span>
+                        <span class="info-updates-version">v1.1.3</span>
+                        <span
+                          class="info-updates-content">ローカル動画指定の調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.1.2">
+                        <span class="info-updates-date">2026/02/13</span>
+                        <span class="info-updates-version">v1.1.2</span>
+                        <span
+                          class="info-updates-content">ローカル動画指定の調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.1.1">
+                        <span class="info-updates-date">2026/02/13</span>
+                        <span class="info-updates-version">v1.1.1</span>
+                        <span
+                          class="info-updates-content">メインdirがCドライブにない際のcookie指定の調整</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.1.0">
+                        <span class="info-updates-date">2026/02/13</span>
+                        <span class="info-updates-version">v1.1.0</span>
+                        <span class="info-updates-content">コンソールログを実装</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.0.3">
+                        <span class="info-updates-date">2026/02/13</span>
+                        <span class="info-updates-version">v1.0.3</span>
+                        <span
+                          class="info-updates-content">設定UIの調整、自動起動に対応</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.0.2">
+                        <span class="info-updates-date">2026/02/13</span>
+                        <span class="info-updates-version">v1.0.2</span>
+                        <span class="info-updates-content">仮サムネの実装</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.0.1">
+                        <span class="info-updates-date">2026/02/12</span>
+                        <span class="info-updates-version">v1.0.1</span>
+                        <span
+                          class="info-updates-content">進捗バーをコメントに対応、最適化</span>
+                      </li>
+                      <li class="info-updates-item" data-version="1.0.0">
+                        <span class="info-updates-date">2026/02/12</span>
+                        <span class="info-updates-version">v1.0.0</span>
+                        <span class="info-updates-content">外部に公開</span>
+                      </li>
+                    </ul>
+                  </details>
+                </div>
+              </div>
+              <div class="toggle">
+                <div>
+                  フィードバック
+                  <small>フィードバックはこちらからお願いします。</small>
+                </div>
+                <div class="settings-inline-row settings-gap-8">
+                  <button id="open-feedback-modal-btn"
+                    class="btn-ui btn-blue">フィードバックを開く</button>
+                  <small id="feedback-modal-status"
+                    class="settings-hint-blue"></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-layout card-margin-top-20">
+          <div class="card-main">
+            <h2>コンソールログ</h2>
+            <div>
+              <small>このページを開いている間、サーバー側のログを追跡表示します。</small>
+              <small id="console-log-status"
+                class="settings-hint-blue">待機中...</small>
+            </div>
+            <div class="options">
+              <div class="toggle settings-toggle-top">
+                <div
+                  class="settings-stack settings-stack-8 settings-stack-log">
+                  <div id="console-log-toolbar"
+                    class="settings-inline-row settings-gap-8">
+                    <button id="console-log-clear-btn"
+                      class="btn-ui btn-gray"
+                      title="表示をクリア"
+                      aria-label="表示をクリア">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                    <label class="switch" title="自動追従を一時停止">
+                      <input type="checkbox" id="console-log-pause" />
+                      <span class="slider"></span>
+                    </label>
+                    <small>一時停止</small>
+                    <input
+                      type="text"
+                      id="console-log-search"
+                      class="settings-input-full"
+                      placeholder="コンソールログを検索できます。and検索とnot検索に対応しています" />
+                  </div>
+                  <div id="console-log-output"
+                    class="console-log-panel"
+                    aria-live="polite"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="report-modal-backdrop"
+        class="report-modal-backdrop hidden">
+        <div class="report-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="report-modal-title">
+          <h3 id="report-modal-title"
+            class="report-modal-title">レポートの生成</h3>
+          <div class="report-modal-copy">
+            レポートには以下の情報が含まれます。
+          </div>
+          <ul class="report-modal-list">
+            <li>OSや使用ブラウザ、ストレージとメモリのサイズ</li>
+            <li>LocalTubeの設定情報</li>
+            <li>LocalTubeのフォルダ構造、パス</li>
+            <li>依存ツールのバージョン情報</li>
+            <li>一部ログと失敗した動画のURL、エラーメッセージ</li>
+          </ul>
+          <div class="report-modal-copy">
+            これらの内容に同意いただける場合のみ、生成してください。
+          </div>
+          <div class="report-modal-actions">
+            <button id="report-modal-cancel-btn"
+              class="btn-ui btn-gray">いいえ</button>
+            <button id="report-modal-confirm-btn"
+              class="btn-ui btn-blue">はい</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="format-report-loading-backdrop"
+        class="format-report-loading-backdrop hidden">
+        <div class="format-report-loading-modal"
+          role="status"
+          aria-live="polite"
+          aria-label="フォーマット取得中">
+          <div class="format-report-loading-spinner"></div>
+          <h3 class="format-report-loading-title">フォーマットを取得しています。</h3>
+          <div
+            class="format-report-loading-copy">対象動画のフォーマットを確認しています。しばらくお待ちください。</div>
+        </div>
+      </div>
+
+      <div id="feedback-modal-backdrop"
+        class="report-modal-backdrop hidden">
+        <div class="report-modal feedback-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="feedback-modal-title">
+          <h3 id="feedback-modal-title"
+            class="report-modal-title">フィードバック</h3>
+          <div class="report-modal-copy">
+            匿名です。つよい言葉や個人情報は避けてください。
+          </div>
+          <div id="feedback-modal-submit-status"
+            class="report-modal-copy hidden"></div>
+          <div class="feedback-modal-form">
+            <div class="feedback-modal-grid">
+              <div class="feedback-modal-label">カテゴリ</div>
+              <div class="feedback-modal-field">
+                <select id="feedback-category-select">
+                  <option value="不具合報告">不具合報告</option>
+                  <option value="改善要望">改善要望</option>
+                  <option value="感想">感想</option>
+                  <option value="質問">質問</option>
+                  <option value="その他">その他</option>
+                </select>
+              </div>
+
+              <div class="feedback-modal-label">内容</div>
+              <div class="feedback-modal-field">
+                <textarea id="feedback-message-input"
+                  placeholder="フィードバックの内容をここに入力してください。"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="report-modal-actions">
+            <button id="feedback-modal-cancel-btn"
+              class="btn-ui btn-gray">閉じる</button>
+            <button id="feedback-modal-confirm-btn"
+              class="btn-ui btn-blue">送信</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="feedback-confirm-modal-backdrop"
+        class="report-modal-backdrop hidden">
+        <div class="report-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="feedback-confirm-modal-title">
+          <h3 id="feedback-confirm-modal-title"
+            class="report-modal-title">フィードバック送信の確認</h3>
+          <div class="report-modal-copy">
+            フィードバックを送信してもよろしいですか？
+          </div>
+          <div class="report-modal-actions">
+            <button id="feedback-confirm-modal-cancel-btn"
+              class="btn-ui btn-gray">いいえ</button>
+            <button id="feedback-confirm-modal-confirm-btn"
+              class="btn-ui btn-blue">はい</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="settings-confirm-modal-backdrop"
+        class="report-modal-backdrop hidden">
+        <div class="report-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settings-confirm-modal-title">
+          <h3 id="settings-confirm-modal-title"
+            class="report-modal-title">確認</h3>
+          <div id="settings-confirm-modal-message"
+            class="report-modal-copy"></div>
+          <div class="report-modal-actions">
+            <button id="settings-confirm-modal-cancel-btn"
+              class="btn-ui btn-gray">いいえ</button>
+            <button id="settings-confirm-modal-confirm-btn"
+              class="btn-ui btn-blue">はい</button>
+          </div>
+        </div>
+      </div>
+      <div id="estimate-loading-backdrop"
+        class="estimate-loading-backdrop hidden">
+        <div class="estimate-loading-modal"
+          role="status"
+          aria-live="polite"
+          aria-label="予測サイズ取得中">
+          <div class="estimate-loading-spinner"></div>
+          <h3 class="estimate-loading-title">予測サイズを取得しています。</h3>
+          <div
+            class="estimate-loading-copy">URLごとのサイズを確認しています。しばらくお待ちください。</div>
+        </div>
+      </div>
+
+      <div id="download-confirm-modal-backdrop"
+        class="report-modal-backdrop hidden">
+        <div class="report-modal download-confirm-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="download-confirm-modal-title">
+          <h3 id="download-confirm-modal-title"
+            class="report-modal-title">ダウンロード確認</h3>
+          <div id="download-confirm-modal-message"
+            class="report-modal-copy">ダウンロードを開始しますか？</div>
+          <div id="download-confirm-modal-estimate"
+            class="report-modal-copy hidden"></div>
+          <label class="download-confirm-modal-check">
+            <input type="checkbox"
+              id="download-confirm-modal-skip-checkbox" />
+            <span>次回以降確認をしないようにする（設定から再度有効にできます）</span>
+          </label>
+          <div class="report-modal-actions">
+            <button id="download-confirm-modal-cancel-btn"
+              class="btn-ui btn-gray">いいえ</button>
+            <button id="download-confirm-modal-confirm-btn"
+              class="btn-ui btn-blue">はい</button>
+          </div>
+          <div id="download-confirm-modal-errors"
+            class="download-confirm-modal-errors hidden">
+            <div id="download-confirm-modal-errors-copy"
+              class="download-confirm-modal-errors-copy"></div>
+            <div id="download-confirm-modal-errors-list"
+              class="download-confirm-modal-errors-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="failed-url-modal-backdrop"
+        class="report-modal-backdrop hidden">
+        <div class="report-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="failed-url-modal-title">
+          <h3 id="failed-url-modal-title"
+            class="report-modal-title">失敗した動画のURL</h3>
+          <div id="failed-url-modal-copy"
+            class="report-modal-copy failed-url-modal-copy">失敗したURLをまとめて扱えます。</div>
+          <textarea id="failed-url-modal-preview"
+            class="failed-url-modal-preview"
+            readonly></textarea>
+          <div class="report-modal-actions wrap">
+            <button id="failed-url-modal-cancel-btn"
+              class="btn-ui btn-gray"
+              type="button">いいえ</button>
+            <button id="failed-url-modal-copy-btn"
+              class="btn-ui btn-blue"
+              type="button">コピー</button>
+            <button id="failed-url-modal-export-btn"
+              class="btn-ui btn-blue"
+              type="button">エクスポート</button>
+            <button id="failed-url-modal-autofill-btn"
+              class="btn-ui btn-blue"
+              type="button">ダウンロード対象として自動入力</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/shared/error-hints.js"></script>
+    <script src="/app-core.js"></script>
+    <script src="/app-feedback.js"></script>
+    <script src="/app-home-cards.js"></script>
+    <script src="/app-renderers.js"></script>
+    <script src="/app-comments.js"></script>
+    <script src="/app-home-browser.js"></script>
+    <script src="/app-dashboard.js"></script>
+    <script src="/app-settings-ui.js"></script>
+    <script src="/app-player-ui.js"></script>
+    <script src="/app-player-page.js"></script>
+    <script src="/app-local-video.js"></script>
+    <script src="/app-playlists-page.js"></script>
+    <script src="/app-state.js"></script>
+    <script src="/app-actions.js"></script>
+    <script src="/app-routing.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
