@@ -166,18 +166,31 @@ function createJobQueueService({
   }
 
   if (enableWatch) {
-    fs.watch(pendingChatDir, (_eventType, filename) => {
-      if (!filename || !filename.startsWith("job_")) return;
-      const jobPath = path.join(pendingChatDir, filename);
-      try {
-        if (fs.existsSync(jobPath) && fs.statSync(jobPath).isDirectory()) {
-          logger.info("新ジョブ検出", { filename });
-          enqueueJob(jobPath);
+    try {
+      const watcher = fs.watch(pendingChatDir, (_eventType, filename) => {
+        if (!filename || !filename.startsWith("job_")) return;
+        const jobPath = path.join(pendingChatDir, filename);
+        try {
+          if (fs.existsSync(jobPath) && fs.statSync(jobPath).isDirectory()) {
+            logger.info("新ジョブ検出", { filename });
+            enqueueJob(jobPath);
+          }
+        } catch (err) {
+          logger.warn("ジョブ検出失敗", { jobPath, error: err.message });
         }
-      } catch (err) {
-        logger.warn("ジョブ検出失敗", { jobPath, error: err.message });
-      }
-    });
+      });
+      watcher.on("error", (err) => {
+        logger.warn("ジョブ監視停止", {
+          pendingChatDir,
+          error: err.message,
+        });
+      });
+    } catch (err) {
+      logger.warn("ジョブ監視開始失敗", {
+        pendingChatDir,
+        error: err.message,
+      });
+    }
   }
 
   return {
