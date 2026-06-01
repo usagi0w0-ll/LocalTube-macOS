@@ -1,7 +1,44 @@
 const fs = require("fs");
 const path = require("path");
 
-function resolveExistingToolPath(baseDir, candidates, { allowPathLookup = false } = {}) {
+function resolveCommandOnPath(command, pathValue = process.env.PATH || "") {
+  const rawCommand = String(command || "").trim();
+  if (!rawCommand) return null;
+
+  const pathDirs = String(pathValue || "")
+    .split(path.delimiter)
+    .map((dir) => dir.trim())
+    .filter(Boolean);
+  const extensions =
+    process.platform === "win32" && !path.extname(rawCommand)
+      ? String(process.env.PATHEXT || ".COM;.EXE;.BAT;.CMD")
+          .split(";")
+          .filter(Boolean)
+      : [""];
+
+  for (const dir of pathDirs) {
+    for (const extension of extensions) {
+      const candidate = path.join(dir, `${rawCommand}${extension}`);
+      try {
+        fs.accessSync(
+          candidate,
+          process.platform === "win32" ? fs.constants.F_OK : fs.constants.X_OK,
+        );
+        return candidate;
+      } catch (_error) {
+        // try next candidate
+      }
+    }
+  }
+
+  return null;
+}
+
+function resolveExistingToolPath(
+  baseDir,
+  candidates,
+  { allowPathLookup = false, pathValue = process.env.PATH || "" } = {},
+) {
   const normalizedBaseDir = String(baseDir || "").trim();
   const list = Array.isArray(candidates) ? candidates : [];
 
@@ -20,6 +57,10 @@ function resolveExistingToolPath(baseDir, candidates, { allowPathLookup = false 
   }
 
   if (!allowPathLookup) return null;
+  for (const candidate of list) {
+    const resolved = resolveCommandOnPath(candidate, pathValue);
+    if (resolved) return resolved;
+  }
   return list.find((candidate) => String(candidate || "").trim()) || null;
 }
 
@@ -61,6 +102,7 @@ function resolveAtomicParsleyPath(baseDir) {
 }
 
 module.exports = {
+  resolveCommandOnPath,
   resolveExistingToolPath,
   resolveYtDlpPath,
   resolveFfmpegPath,
