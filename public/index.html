@@ -547,6 +547,14 @@
         height: 50px;
       }
 
+      .url-box .save-path-select-btn {
+        align-self: stretch;
+        width: 50px;
+        min-width: 50px;
+        padding: 0;
+        border-radius: 8px;
+      }
+
       /* オプション列 */
       .field-row {
         display: flex;
@@ -3840,6 +3848,12 @@
           border-radius: 10px;
         }
 
+        .url-box .save-path-select-btn {
+          width: 44px;
+          min-width: 44px;
+          flex: 0 0 44px;
+        }
+
         .toggle {
           flex-direction: column;
           align-items: stretch;
@@ -4639,6 +4653,14 @@
                     type="text"
                     id="savePath"
                     placeholder="保存先フォルダパス (空白の場合はデフォルト)" />
+                  <button
+                    type="button"
+                    id="select-save-path-btn"
+                    class="save-path-select-btn"
+                    title="保存先フォルダを選択"
+                    aria-label="保存先フォルダを選択">
+                    <i class="fa-regular fa-folder-open" aria-hidden="true"></i>
+                  </button>
                 </div>
               </div>
 

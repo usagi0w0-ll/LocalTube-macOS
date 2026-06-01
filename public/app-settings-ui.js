@@ -475,6 +475,38 @@ function clampNumberInRange(value, min, max, fallback) {
         });
       }
 
+      function initializeSavePathSelector(elements) {
+        if (!elements.selectSavePathBtn || !elements.savePath) return;
+
+        elements.selectSavePathBtn.addEventListener("click", async () => {
+          if (elements.selectSavePathBtn.disabled) return;
+          elements.selectSavePathBtn.disabled = true;
+          try {
+            const response = await settingsUiDeps.fetchImpl("/api/select-save-path", {
+              method: "POST",
+            });
+            const result = await settingsUiDeps.parseApiResponseImpl(response);
+            if (!result.ok) {
+              throw new Error(result.error || "保存先フォルダの選択に失敗しました。");
+            }
+            if (result.data?.canceled) return;
+
+            const selectedPath = String(result.data?.path || "").trim();
+            if (!selectedPath) return;
+            elements.savePath.value = selectedPath;
+            saveLocalSetting("savePath", selectedPath);
+            settingsUiDeps.notifyInfoImpl("動画の保存先を選択しました。");
+          } catch (error) {
+            console.error("保存先フォルダ選択エラー:", error);
+            settingsUiDeps.notifyErrorImpl(
+              error.message || "保存先フォルダの選択に失敗しました。",
+            );
+          } finally {
+            elements.selectSavePathBtn.disabled = false;
+          }
+        });
+      }
+
       function initializeAutostartTaskButtons(elements) {
         const autostartModeSelect = document.getElementById("opt-autostart-mode");
         const autostartStatus = document.getElementById("autostart-status");
@@ -2118,6 +2150,7 @@ function initializeSettingsUiController({
       }) {
         setSettingsUiDependencies(dependencies);
         initializeGeneralSettingStorageBindings(elements);
+        initializeSavePathSelector(elements);
         initializeHistoryClearButton(elements);
         initializeAutostartTaskButtons(elements);
         initializeServerRestartButton(elements);
@@ -2153,5 +2186,6 @@ global.__settingsUiTestUtils = {
     applyLocalVideoDirsFromServer,
     applyFallbackThumbnailSettingFromServer,
     applyDownloadEstimateSettingFromServer,
+    initializeSavePathSelector,
   };
 })(window);

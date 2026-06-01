@@ -1,7 +1,7 @@
 // 必要なモジュールをインポートします。
 const express = require("express"); // Webサーバーフレームワーク
 const serverStartTime = Date.now();
-const { spawn } = require("child_process"); // 外部コマンド（yt-dlp.exe）を実行するため
+const { execFile, spawn } = require("child_process"); // 外部コマンド（yt-dlp.exe）を実行するため
 const path = require("path"); // ファイルパスを扱うため
 const fs = require("fs"); // ファイルシステムを操作するため（ディレクトリ作成など）
 const multer = require("multer"); // ファイルアップロードを処理するため
@@ -26,6 +26,7 @@ const { registerLiveChatRoutes } = require("./server/routes/live-chat-routes");
 const { registerInfoRoutes } = require("./server/routes/info-routes");
 const { registerNetworkRoutes } = require("./server/routes/network-routes");
 const { registerScheduleRoutes } = require("./server/routes/schedule-routes");
+const { registerSavePathRoutes } = require("./server/routes/save-path-routes");
 const { registerLogRoutes } = require("./server/routes/log-routes");
 const {
   registerReportRoutes,
@@ -313,6 +314,11 @@ registerScheduleRoutes(app, {
   path,
   os,
   spawn,
+});
+
+registerSavePathRoutes(app, {
+  ...routeBaseDeps,
+  execFile,
 });
 
 registerLogRoutes(app, {

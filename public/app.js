@@ -512,6 +512,7 @@ const appState = window.AppState || {
           fmt: document.getElementById("fmt"),
           videoFormat: document.getElementById("videoFormat"),
           savePath: document.getElementById("savePath"),
+          selectSavePathBtn: document.getElementById("select-save-path-btn"),
           optHistory: document.getElementById("optHistory"),
           optThumb: document.getElementById("optThumb"),
           optEmbedThumbnail: document.getElementById("optEmbedThumbnail"),
