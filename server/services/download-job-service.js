@@ -2,6 +2,14 @@ const { execFileSync } = require("child_process");
 const { createLogger } = require("./logger-service");
 const { resolveFfmpegPath, resolveYtDlpPath } = require("./tool-path-service");
 
+function decodeYtDlpBuffer(buffer) {
+  const source = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer || "");
+  if (process.platform === "win32") {
+    return iconv.decode(source, "cp932");
+  }
+  return source.toString("utf8");
+}
+
 function createDownloadJobService({
   fs,
   path,
@@ -165,7 +173,15 @@ function createDownloadJobService({
       `temp:${tempDir}`,
       "--ignore-errors",
       "--retries",
-      "infinite",
+      "10",
+      "--fragment-retries",
+      liveReplayMode ? "20" : "10",
+      "--file-access-retries",
+      "3",
+      "--retry-sleep",
+      "exp=1:20",
+      "--retry-sleep",
+      "fragment:exp=1:20",
       "--progress",
       "--no-color",
       "--newline",
@@ -175,7 +191,7 @@ function createDownloadJobService({
     if (!liveReplayMode && !plainRetryMode) {
       // ライブ特別処理の対象は「現在ライブ中」のみ。
       // was_live/post_live は通常動画として扱い、アーカイブを巻き込まない。
-      args.push("--match-filter", "!is_live");
+      args.push("--match-filter", "live_status!=is_live");
     }
 
     if (ffmpegPath) {
@@ -234,8 +250,6 @@ function createDownloadJobService({
         "--live-from-start",
         "--wait-for-video",
         "30",
-        "--fragment-retries",
-        "infinite",
         "--hls-use-mpegts",
       );
     }
@@ -443,14 +457,14 @@ function createDownloadJobService({
 
       ytDlpProcess.on("close", (code) => {
         const stdoutBuffer = Buffer.concat(stdoutChunks);
-        const title = iconv.decode(stdoutBuffer, "cp932");
+        const title = decodeYtDlpBuffer(stdoutBuffer);
         if (code === 0 && title.trim() !== "") {
           resolve(title.trim());
           return;
         }
 
         const stderrBuffer = Buffer.concat(stderrChunks);
-        const stderr = iconv.decode(stderrBuffer, "cp932");
+        const stderr = decodeYtDlpBuffer(stderrBuffer);
         reject(new Error(`yt-dlp exited with code ${code}. Stderr: ${stderr}`));
       });
 
@@ -1040,5 +1054,6 @@ function createDownloadJobService({
 }
 
 module.exports = {
+  decodeYtDlpBuffer,
   createDownloadJobService,
 };

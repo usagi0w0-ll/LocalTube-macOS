@@ -78,8 +78,23 @@ function registerDownloadRoutes(
     return match ? match[1].toLowerCase() : "";
   }
 
+  function buildYoutubeVideoFormat(format, formatText) {
+    const tier = extractFormatTier(formatText);
+    const height = Number.parseInt(tier, 10);
+    if (!Number.isFinite(height) || height <= 0) {
+      return String(format || "").trim();
+    }
+    return [
+      `bv*[height<=${height}][vcodec!=none]+ba[acodec!=none]`,
+      `b[height<=${height}][vcodec!=none]`,
+      `bv*[height<=${height}][vcodec!=none]`,
+      "bv*[vcodec!=none]+ba[acodec!=none]",
+      "b[vcodec!=none]",
+    ].join("/");
+  }
+
   function resolveFormatForUrl(url, format, formatText) {
-    if (!isNicovideoUrl(url)) return format;
+    if (!isNicovideoUrl(url)) return buildYoutubeVideoFormat(format, formatText);
     const tier = extractFormatTier(formatText);
     return NICOVIDEO_FORMAT_BY_TIER.get(tier) || format;
   }
