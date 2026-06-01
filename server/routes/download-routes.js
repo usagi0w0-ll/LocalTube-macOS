@@ -85,11 +85,15 @@ function registerDownloadRoutes(
       return String(format || "").trim();
     }
     return [
+      `bv*[height<=${height}][ext=mp4][vcodec!=none]+ba[ext=m4a][acodec!=none]`,
+      `bv*[height<=${height}][ext=mp4][vcodec!=none]+ba[acodec!=none]`,
+      `bv*[height<=${height}][vcodec!=none]+ba[ext=m4a][acodec!=none]`,
+      `b[height<=${height}][ext=mp4][vcodec!=none][acodec!=none]`,
+      `b[height<=${height}][vcodec!=none][acodec!=none]`,
       `bv*[height<=${height}][vcodec!=none]+ba[acodec!=none]`,
-      `b[height<=${height}][vcodec!=none]`,
-      `bv*[height<=${height}][vcodec!=none]`,
+      "bv*[vcodec!=none]+ba[ext=m4a][acodec!=none]",
       "bv*[vcodec!=none]+ba[acodec!=none]",
-      "b[vcodec!=none]",
+      "b[vcodec!=none][acodec!=none]",
     ].join("/");
   }
 

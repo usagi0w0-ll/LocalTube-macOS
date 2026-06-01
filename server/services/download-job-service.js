@@ -171,7 +171,6 @@ function createDownloadJobService({
       `home:${targetMovieDir}`,
       "-P",
       `temp:${tempDir}`,
-      "--ignore-errors",
       "--retries",
       "10",
       "--fragment-retries",
@@ -185,6 +184,7 @@ function createDownloadJobService({
       "--progress",
       "--no-color",
       "--newline",
+      "--no-keep-video",
       "--merge-output-format",
       "mp4"
     ];
