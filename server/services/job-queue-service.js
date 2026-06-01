@@ -28,13 +28,20 @@ function createJobQueueService({
   function defaultRunBatchScript(command) {
     return new Promise((resolve, reject) => {
       logger.info("スクリプト実行", { command });
-      const proc = exec(command, { shell: "powershell.exe", windowsHide: true });
+      const execOptions =
+        process.platform === "win32"
+          ? { shell: "powershell.exe", windowsHide: true }
+          : { windowsHide: true };
+      const proc = exec(command, execOptions);
       proc.stdout.on("data", (data) =>
         logger.info("script stdout", { message: data.toString().trim() }),
       );
       proc.stderr.on("data", (data) =>
         logger.warn("script stderr", { message: data.toString().trim() }),
       );
+      proc.on("error", (error) => {
+        reject(new Error(`スクリプト起動失敗: ${error.message}`));
+      });
       proc.on("close", (code) => {
         if (code === 0) resolve();
         else reject(new Error(`スクリプト終了コード: ${code}`));
